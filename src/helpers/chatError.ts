@@ -9,6 +9,15 @@ export class AccountNotFoundError extends Error {
   }
 }
 
+// Ответ пришёл после «Выйти»: в стор новой сессии его не пишем. Бросает хук, чтобы не сработал
+// onSuccess; в UI ошибка не видна — экран чатов к этому моменту размонтирован.
+export class SessionEndedError extends Error {
+  constructor() {
+    super('Сессия GREEN-API завершена до ответа');
+    this.name = 'SessionEndedError';
+  }
+}
+
 // Общие для CheckAccount и SendMessage случаи; null — пусть решает вызывающий.
 function describeCommonError(error: GreenApiError): string | null {
   if (error.kind === 'network') return 'Нет связи с GREEN-API. Проверьте интернет.';

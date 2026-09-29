@@ -18,7 +18,8 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
 
   const submit = () => {
     if (!canSend) return;
-    // Поле очищаем только после успеха: при ошибке набранный текст не теряется.
+    // Поле очищаем только после успеха: при ошибке набранный текст не теряется. Пока идёт отправка,
+    // поле только для чтения — иначе очистка стёрла бы допечатанное.
     send.mutate({ chatId, text }, { onSuccess: () => setText('') });
   };
 
@@ -54,6 +55,8 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
           placeholder="Сообщение"
           rows={1}
           maxLength={MAX_MESSAGE_LENGTH}
+          // readOnly, а не disabled: фокус остаётся в поле, после ответа можно печатать дальше.
+          readOnly={send.isPending}
           value={text}
           onChange={handleChange}
           onKeyDown={handleKeyDown}

@@ -3,11 +3,18 @@ import type { NotificationBody, NotificationMessageData } from '@/types/greenApi
 
 // Сообщения чата — только эти типы (skill green-api §4). outgoingAPIMessageReceived — эхо своей же
 // отправки: дубль отсекает стор по idMessage, так что разбор эхо не отбрасывает.
-const DIRECTION_BY_WEBHOOK: Record<string, ChatMessage['direction']> = {
-  incomingMessageReceived: 'incoming',
-  outgoingMessageReceived: 'outgoing',
-  outgoingAPIMessageReceived: 'outgoing',
-};
+// switch, а не таблица-объект: поиск по объекту нашёл бы и 'toString' из прототипа.
+function directionOf(typeWebhook: unknown): ChatMessage['direction'] | null {
+  switch (typeWebhook) {
+    case 'incomingMessageReceived':
+      return 'incoming';
+    case 'outgoingMessageReceived':
+    case 'outgoingAPIMessageReceived':
+      return 'outgoing';
+    default:
+      return null;
+  }
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -32,7 +39,7 @@ export function parseNotification(body: unknown): ChatMessage | null {
   if (!isRecord(body)) return null;
   const { typeWebhook, idMessage, timestamp, senderData, messageData } = body as NotificationBody;
 
-  const direction = typeof typeWebhook === 'string' ? DIRECTION_BY_WEBHOOK[typeWebhook] : undefined;
+  const direction = directionOf(typeWebhook);
   if (!direction) return null;
   if (typeof idMessage !== 'string' || idMessage === '') return null;
   if (typeof timestamp !== 'number' || !Number.isFinite(timestamp)) return null;

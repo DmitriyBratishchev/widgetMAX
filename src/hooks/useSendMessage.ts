@@ -1,7 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
+import { SessionEndedError } from '@/helpers/chatError';
 import { sendMessage } from '@/services/chatService';
 import { useChatStore, type ChatMessage } from '@/stores/chatStore';
-import { useSessionStore } from '@/stores/sessionStore';
+import { isCurrentSession, useSessionStore } from '@/stores/sessionStore';
 
 interface SendMessageVariables {
   chatId: string;
@@ -17,6 +18,8 @@ export function useSendMessage() {
       if (!credentials) throw new Error('Нет сессии GREEN-API');
       const message = text.trim();
       const { idMessage } = await sendMessage(credentials, { chatId, message });
+      // Пока шла отправка, нажали «Выйти»: сообщение старой сессии в журнал не пишем.
+      if (!isCurrentSession(credentials)) throw new SessionEndedError();
       // В ленту — только после ответа GREEN-API: при ошибке в чате не остаётся «призрака».
       return { idMessage, chatId, text: message, direction: 'outgoing', timestamp: Date.now() };
     },

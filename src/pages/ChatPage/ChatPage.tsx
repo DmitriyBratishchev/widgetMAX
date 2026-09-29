@@ -1,7 +1,7 @@
 import { Avatar } from '@/components/ui/Avatar/Avatar';
 import { Button } from '@/components/ui/Button/Button';
 import { formatPhone, getPhoneAvatarLabel } from '@/helpers/phone';
-import { useNotificationPolling } from '@/hooks/useNotificationPolling';
+import { useNotificationPolling, type PollingStopReason } from '@/hooks/useNotificationPolling';
 import { useSignOut } from '@/hooks/useSignOut';
 import { useChatStore } from '@/stores/chatStore';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -11,6 +11,12 @@ import { MessageList } from './MessageList/MessageList';
 import { NewChatForm } from './NewChatForm/NewChatForm';
 import styles from './ChatPage.module.scss';
 
+const POLLING_STOP_MESSAGES: Record<PollingStopReason, string> = {
+  'credentials-rejected':
+    'Приём сообщений остановлен: GREEN-API не принял учётные данные. Войдите заново',
+  'unexpected-error': 'Приём сообщений остановлен из-за ошибки приложения. Обновите страницу',
+};
+
 // Раскладка по образцу web.max.ru: две колонки на всю высоту — слева шапка, новый чат и список,
 // справа шапка чата, лента и поле ввода. На узком экране видна одна колонка — по data-view.
 export function ChatPage() {
@@ -19,7 +25,13 @@ export function ChatPage() {
   const activeChat = useChatStore((s) => s.chats.find((c) => c.chatId === s.activeChatId));
   const closeChat = useChatStore((s) => s.closeChat);
   // Приём ответов из MAX: цикл живёт, пока открыт экран чатов, и останавливается при выходе.
-  useNotificationPolling();
+  // Сеть и лимиты цикл переживает молча; встал насовсем — говорим об этом над лентой.
+  const pollingStop = useNotificationPolling();
+  const pollingStopAlert = pollingStop && (
+    <p className={styles.pollingStopped} role="alert">
+      {POLLING_STOP_MESSAGES[pollingStop]}
+    </p>
+  );
 
   return (
     <div className={styles.page} data-view={activeChat ? 'chat' : 'list'}>
@@ -54,12 +66,16 @@ export function ChatPage() {
               <Avatar size="sm" label={getPhoneAvatarLabel(activeChat.phone)} />
               <h2 className={styles.chatTitle}>{formatPhone(activeChat.phone)}</h2>
             </header>
+            {pollingStopAlert}
             <MessageList chatId={activeChat.chatId} />
             {/* key: черновик сообщения не переезжает в другой чат. */}
             <MessageComposer key={activeChat.chatId} chatId={activeChat.chatId} />
           </>
         ) : (
-          <p className={styles.placeholder}>Выберите чат или создайте новый по номеру телефона</p>
+          <>
+            {pollingStopAlert}
+            <p className={styles.placeholder}>Выберите чат или создайте новый по номеру телефона</p>
+          </>
         )}
       </main>
     </div>
