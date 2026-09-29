@@ -1,18 +1,14 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { greenApiRequest } from '@/api/greenApiClient';
 import { checkAccount, sendMessage } from '@/services/chatService';
 
-vi.mock('@/api/greenApiClient', () => ({ greenApiRequest: vi.fn() }));
+vi.mock('@/api/greenApiClient', () => ({ greenApiRequest: vi.fn<typeof greenApiRequest>() }));
 
 const credentials = {
   idInstance: '1101000000',
   apiTokenInstance: 'test-token',
   apiUrl: 'https://1101.api.green-api.com',
 };
-
-beforeEach(() => {
-  vi.mocked(greenApiRequest).mockReset();
-});
 
 describe('chatService', () => {
   it('checkAccount шлёт POST checkAccount с phoneNumber числом', async () => {

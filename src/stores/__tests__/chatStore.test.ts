@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { CHAT_STORAGE_KEY, useChatStore, type ChatMessage } from '@/stores/chatStore';
+import { readPersistedState } from '@/test/persistedState';
 
 const chat = { chatId: '10000000', phone: '79991234567' };
 
@@ -10,10 +11,6 @@ const message: ChatMessage = {
   direction: 'outgoing',
   timestamp: 1790000000000,
 };
-
-function storedState() {
-  return JSON.parse(sessionStorage.getItem(CHAT_STORAGE_KEY) ?? '{}').state;
-}
 
 beforeEach(() => {
   useChatStore.getState().reset();
@@ -74,7 +71,7 @@ describe('chatStore', () => {
     useChatStore.getState().addChat(chat);
     useChatStore.getState().addMessage(message);
 
-    expect(storedState()).toEqual({
+    expect(readPersistedState(CHAT_STORAGE_KEY)).toEqual({
       chats: [chat],
       messagesByChatId: { '10000000': [message] },
       activeChatId: '10000000',
@@ -82,7 +79,11 @@ describe('chatStore', () => {
 
     useChatStore.getState().reset();
 
-    expect(storedState()).toEqual({ chats: [], messagesByChatId: {}, activeChatId: null });
+    expect(readPersistedState(CHAT_STORAGE_KEY)).toEqual({
+      chats: [],
+      messagesByChatId: {},
+      activeChatId: null,
+    });
   });
 
   it('rehydrate восстанавливает чаты из sessionStorage (F5)', async () => {

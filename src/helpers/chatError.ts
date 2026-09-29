@@ -35,6 +35,8 @@ export function getCreateChatErrorMessage(error: unknown): string {
         return 'GREEN-API не смог проверить номер. Проверьте его и попробуйте ещё раз.';
       case 469:
         return 'Исчерпан лимит проверок номеров. GREEN-API снимет ограничение через 2 часа.';
+      default:
+        break;
     }
   }
 
@@ -50,6 +52,8 @@ export function getSendMessageErrorMessage(error: unknown): string {
         return 'GREEN-API отклонил сообщение. Текст — не длиннее 4000 символов.';
       case 403:
         return 'Отправка временно ограничена для аккаунта MAX. Подробности — в личном кабинете GREEN-API.';
+      default:
+        break;
     }
   }
 

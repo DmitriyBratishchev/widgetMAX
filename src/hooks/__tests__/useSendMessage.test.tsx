@@ -4,11 +4,14 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GreenApiError } from '@/api/greenApiClient';
 import { useSendMessage } from '@/hooks/useSendMessage';
-import { sendMessage } from '@/services/chatService';
+import { type checkAccount, sendMessage } from '@/services/chatService';
 import { useChatStore } from '@/stores/chatStore';
 import { useSessionStore } from '@/stores/sessionStore';
 
-vi.mock('@/services/chatService', () => ({ checkAccount: vi.fn(), sendMessage: vi.fn() }));
+vi.mock('@/services/chatService', () => ({
+  checkAccount: vi.fn<typeof checkAccount>(),
+  sendMessage: vi.fn<typeof sendMessage>(),
+}));
 
 const credentials = {
   idInstance: '1101000000',
@@ -25,7 +28,6 @@ function renderSendMessage() {
 }
 
 beforeEach(() => {
-  vi.mocked(sendMessage).mockReset();
   useChatStore.getState().reset();
   useSessionStore.getState().signIn(credentials);
   sessionStorage.clear();

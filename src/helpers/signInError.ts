@@ -43,6 +43,8 @@ export function getSignInErrorMessage(error: unknown): string {
         return 'Инстанс не найден по этому apiUrl. Сверьте адрес с личным кабинетом GREEN-API.';
       case 429:
         return 'Слишком частые запросы. Подождите пару секунд и попробуйте снова.';
+      default:
+        break;
     }
   }
 

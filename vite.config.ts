@@ -16,5 +16,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
+    // Сброс моков перед каждым тестом: vi.fn() — пустая функция, vi.fn(impl) — снова impl.
+    mockReset: true,
   },
 });

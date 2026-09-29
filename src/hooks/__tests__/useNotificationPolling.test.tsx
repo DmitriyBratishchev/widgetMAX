@@ -9,8 +9,8 @@ import { useSessionStore } from '@/stores/sessionStore';
 import type { ReceiveNotificationResponse } from '@/types/greenApi';
 
 vi.mock('@/services/notificationService', () => ({
-  receiveNotification: vi.fn(),
-  deleteNotification: vi.fn(),
+  receiveNotification: vi.fn<typeof receiveNotification>(),
+  deleteNotification: vi.fn<typeof deleteNotification>(),
 }));
 
 const credentials = {
@@ -61,12 +61,24 @@ function textNotification(
 }
 
 function lastReceive() {
-  return receives[receives.length - 1];
+  const last = receives.at(-1);
+  if (!last) throw new Error('receiveNotification ещё не вызывался');
+  return last;
+}
+
+// У всех запросов одного цикла общий signal: живой signal = живой цикл.
+function liveLoops() {
+  return new Set(receives.map((r) => r.signal).filter((s) => !s.aborted)).size;
+}
+
+function StrictModeWrapper({ children }: { children: ReactNode }) {
+  return <StrictMode>{children}</StrictMode>;
 }
 
 // Цикл — цепочка промисов: даём ей пройти несколько шагов.
 async function flush() {
   await act(async () => {
+    // eslint-disable-next-line eslint/no-await-in-loop -- каждый await — отдельный микротакт
     for (let i = 0; i < 20; i += 1) await Promise.resolve();
   });
 }
@@ -82,8 +94,8 @@ function messages() {
 
 beforeEach(() => {
   receives = [];
-  vi.mocked(receiveNotification).mockReset().mockImplementation(hangingReceive(true));
-  vi.mocked(deleteNotification).mockReset().mockResolvedValue({ result: true });
+  vi.mocked(receiveNotification).mockImplementation(hangingReceive(true));
+  vi.mocked(deleteNotification).mockResolvedValue({ result: true });
   useChatStore.getState().reset();
   useChatStore.getState().addChat({ chatId: '10000000', phone: '79991234567' });
   useSessionStore.getState().signIn(credentials);
@@ -96,7 +108,7 @@ afterEach(() => {
 
 describe('useNotificationPolling: порядок', () => {
   it('receive → запись в стор → delete(receiptId) → следующий receive только после delete', async () => {
-    let finishDelete: () => void = () => {};
+    let finishDelete!: () => void;
     let messagesAtDelete = -1;
     vi.mocked(deleteNotification).mockImplementation(() => {
       messagesAtDelete = messages().length;
@@ -119,10 +131,19 @@ describe('useNotificationPolling: порядок', () => {
     await flush();
 
     expect(receiveNotification).toHaveBeenCalledTimes(2);
-    const [receiveOrder] = vi.mocked(receiveNotification).mock.invocationCallOrder;
-    const [deleteOrder] = vi.mocked(deleteNotification).mock.invocationCallOrder;
-    expect(receiveOrder).toBeLessThan(deleteOrder);
-    expect(deleteOrder).toBeLessThan(vi.mocked(receiveNotification).mock.invocationCallOrder[1]);
+    const calls = [
+      ...vi
+        .mocked(receiveNotification)
+        .mock.invocationCallOrder.map((order) => ({ order, name: 'receive' })),
+      ...vi
+        .mocked(deleteNotification)
+        .mock.invocationCallOrder.map((order) => ({ order, name: 'delete' })),
+    ];
+    expect(calls.toSorted((a, b) => a.order - b.order).map((call) => call.name)).toEqual([
+      'receive',
+      'delete',
+      'receive',
+    ]);
     expect(messages()).toEqual([
       expect.objectContaining({ idMessage: 'id-1', text: 'Привет!', direction: 'incoming' }),
     ]);
@@ -255,10 +276,7 @@ describe('useNotificationPolling: остановка', () => {
   });
 
   it('в StrictMode активен ровно один цикл', async () => {
-    const wrapper = ({ children }: { children: ReactNode }) => <StrictMode>{children}</StrictMode>;
-    // У всех запросов одного цикла общий signal: живой signal = живой цикл.
-    const liveLoops = () => new Set(receives.map((r) => r.signal).filter((s) => !s.aborted)).size;
-    renderHook(() => useNotificationPolling(), { wrapper });
+    renderHook(() => useNotificationPolling(), { wrapper: StrictModeWrapper });
     await flush();
 
     expect(liveLoops()).toBe(1);

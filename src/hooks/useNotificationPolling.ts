@@ -10,8 +10,9 @@ export const RECEIVE_TIMEOUT_SECONDS = 20;
 // Пауза после пустого ответа. На живом инстансе MAX (2026-09-29) receiveNotification вернул null
 // за миллисекунды, а не через receiveTimeout, — без паузы цикл слал сотни запросов в секунду.
 export const EMPTY_QUEUE_PAUSE_MS = 1_000;
-// Пауза после ошибки (сеть, 429, 5xx): растёт до потолка, после успешного шага — сброс.
-export const RETRY_DELAYS_MS = [1_000, 2_000, 4_000, 8_000, 16_000, 30_000];
+// Пауза после ошибки (сеть, 429, 5xx): растёт по таблице, дальше — потолок; после успеха — сброс.
+export const RETRY_DELAYS_MS = [1_000, 2_000, 4_000, 8_000, 16_000];
+export const MAX_RETRY_DELAY_MS = 30_000;
 
 // DeleteNotification ответил result: false — уведомление осталось в очереди.
 class NotificationNotDeletedError extends Error {}
@@ -41,6 +42,7 @@ function showMessage(body: unknown) {
 // Удаляется каждое уведомление — иначе оно останется первым в очереди и приём встанет.
 async function pollNotifications(credentials: GreenApiCredentials, signal: AbortSignal) {
   let failures = 0;
+  /* eslint-disable eslint/no-await-in-loop -- шаги цикла строго последовательны по замыслу */
   while (!signal.aborted) {
     try {
       const notification = await receiveNotification(credentials, RECEIVE_TIMEOUT_SECONDS, signal);
@@ -60,9 +62,10 @@ async function pollNotifications(credentials: GreenApiCredentials, signal: Abort
       if (signal.aborted) return;
       // Не удалённое уведомление придёт снова — дубль в ленту не попадёт (дедуп по idMessage).
       failures += 1;
-      await pause(RETRY_DELAYS_MS[Math.min(failures, RETRY_DELAYS_MS.length) - 1], signal);
+      await pause(RETRY_DELAYS_MS[failures - 1] ?? MAX_RETRY_DELAY_MS, signal);
     }
   }
+  /* eslint-enable eslint/no-await-in-loop */
 }
 
 // Один цикл на сессию. Guard от двойного запуска в StrictMode — abort в cleanup: повторный mount

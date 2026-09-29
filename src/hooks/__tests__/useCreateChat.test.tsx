@@ -5,11 +5,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GreenApiError } from '@/api/greenApiClient';
 import { AccountNotFoundError } from '@/helpers/chatError';
 import { useCreateChat } from '@/hooks/useCreateChat';
-import { checkAccount } from '@/services/chatService';
+import { checkAccount, type sendMessage } from '@/services/chatService';
 import { useChatStore } from '@/stores/chatStore';
 import { useSessionStore } from '@/stores/sessionStore';
 
-vi.mock('@/services/chatService', () => ({ checkAccount: vi.fn(), sendMessage: vi.fn() }));
+vi.mock('@/services/chatService', () => ({
+  checkAccount: vi.fn<typeof checkAccount>(),
+  sendMessage: vi.fn<typeof sendMessage>(),
+}));
 
 const credentials = {
   idInstance: '1101000000',
@@ -26,7 +29,6 @@ function renderCreateChat() {
 }
 
 beforeEach(() => {
-  vi.mocked(checkAccount).mockReset();
   useChatStore.getState().reset();
   useSessionStore.getState().signIn(credentials);
   sessionStorage.clear();

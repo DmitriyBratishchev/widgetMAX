@@ -210,7 +210,7 @@ PR и push в `dev`.
 
 | WM-NN | Задача | Зависит от | § ресёрча | Источник | Статус |
 |---|---|---|---|---|---|
-| WM-05 | Инструменты качества: oxlint (плагины, категории, type-aware `no-deprecated`), флаги TS, CI на PR, `package.json` (`typecheck`, версия, описание), `.editorconfig`, Vitest `restoreMocks`; исправить всё, что инструменты подсветят | — | §2, §6 | план | план |
+| WM-05 | Инструменты качества: oxlint (плагины, категории, type-aware `no-deprecated`), флаги TS, CI на PR, `package.json` (`typecheck`, версия, описание), `.editorconfig`, Vitest `restoreMocks`; исправить всё, что инструменты подсветят | — | §2, §6 | план | в dev WM-05@2026-09-29 |
 | WM-06 | Надёжность: гонка выхода в мутациях, 401 в опросе (Р2), транспорт (пустое тело, битый JSON, таймаут), `Object.hasOwn` в разборе уведомлений, текст в поле во время отправки; тесты на гонку и 401 | WM-05 | §3.1, §6 Р2 | план | план |
 | WM-07 | Доступность: контраст кольца фокуса и muted-текста (токены), live-регион ленты и направление сообщения для скринридера, фокус после «Назад» / открытия чата / ошибки входа | WM-05 | §3.2 | план | план |
 | WM-08 | Чистка кода и тестов: дубли текстов и SCSS, `cx()`, `IconButton`, `ComponentProps` в ките, константы вместо литералов, фикстуры и `renderHookWithQueryClient`, `vi.waitFor` вместо `flush()`, неверные по смыслу комментарии, `favicon`/`meta description` | WM-06, WM-07 | §3.3, §3.4, §2.5 | план | план |
@@ -238,5 +238,7 @@ PR и push в `dev`.
 
 ## 9. Известные проблемы
 
-- `oxlint-tsgolint` сейчас стоит в `node_modules` после эксперимента (`--no-save`, в `package.json` и
-  lock его нет); уйдёт при следующем `npm ci` / `npm install` или станет зависимостью в WM-05.
+- ~~`oxlint-tsgolint` стоит в `node_modules` после эксперимента (`--no-save`)~~ — решено в WM-05:
+  прямая devDependency, в lock есть бинарник `@oxlint-tsgolint/linux-x64` для CI.
+- `flush()` в `useNotificationPolling.test.tsx` — цикл `await Promise.resolve()`; в WM-05 на нём
+  отключён `no-await-in-loop` с причиной. Замена на `vi.waitFor` (WM-08) снимет и отключение.

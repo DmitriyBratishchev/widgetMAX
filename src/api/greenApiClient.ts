@@ -68,5 +68,7 @@ export async function greenApiRequest<T>(
   if (!response.ok) throw new GreenApiError(method, 'http', response.status);
 
   const text = await response.text();
+  // Ответ в рантайме не валидируется: T — контракт вызывающего.
+  // eslint-disable-next-line typescript/no-unsafe-type-assertion -- см. выше
   return (text ? JSON.parse(text) : null) as T;
 }

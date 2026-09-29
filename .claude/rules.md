@@ -135,12 +135,15 @@ chore(claude): обновить правила проекта
 ## 6. ТЕСТИРОВАНИЕ
 
 1. Тесты для нового/изменённого функционала — вместе с кодом, не потом.
-2. **По ходу работы — только точечно**: `npx vitest run <файл>`,
-   `npx tsc -p tsconfig.app.json --noEmit`.
+2. **По ходу работы — только точечно**: `npx vitest run <файл>`, `npm run typecheck` (`tsc -b`,
+   оба проекта TS), `npm run lint`.
 3. **Полный прогон — один раз за фазу, в `/finish`**: `npm run lint` + `npm run format:check` +
    `npm run build` + `npm run test:run`. Ни одна проверка не заменяет другую: `build` несёт
-   свой `tsc -b`, `lint` (oxlint, `--deny-warnings`) ловит правила React Hooks и
-   `only-export-components`, которых не видят ни типы, ни тесты; `format:check` — Prettier.
+   свой `tsc -b` (он же `npm run typecheck`), `lint` (oxlint, `--deny-warnings`, правила по типам)
+   ловит устаревшие API, потерянные промисы, правила React Hooks и `only-export-components`,
+   которых не видят ни типы, ни тесты; `format:check` — Prettier. Локально —
+   `npm run test:run -- --maxWorkers=2`, если машине не хватает памяти. CI (`ci.yml`) гоняет то же
+   на PR и push в `dev`.
 4. Сеть в тестах не ходит: GREEN-API мокается на уровне `services/`.
 5. Приёмка поверх автотестов — `/task-check` (матрица по критериям `spec.md`).
 
@@ -170,5 +173,5 @@ chore(claude): обновить правила проекта
 
 ---
 
-**Версия**: 1.1
+**Версия**: 1.2
 **Последнее обновление**: 2026-09-29

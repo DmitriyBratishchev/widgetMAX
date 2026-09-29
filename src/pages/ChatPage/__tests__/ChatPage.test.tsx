@@ -1,18 +1,21 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GreenApiError } from '@/api/greenApiClient';
 import { ChatPage } from '@/pages/ChatPage/ChatPage';
 import { checkAccount, sendMessage } from '@/services/chatService';
-import { receiveNotification } from '@/services/notificationService';
+import { type deleteNotification, receiveNotification } from '@/services/notificationService';
 import { useChatStore } from '@/stores/chatStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { renderWithQueryClient } from '@/test/renderWithQueryClient';
 
-vi.mock('@/services/chatService', () => ({ checkAccount: vi.fn(), sendMessage: vi.fn() }));
+vi.mock('@/services/chatService', () => ({
+  checkAccount: vi.fn<typeof checkAccount>(),
+  sendMessage: vi.fn<typeof sendMessage>(),
+}));
 vi.mock('@/services/notificationService', () => ({
-  receiveNotification: vi.fn(),
-  deleteNotification: vi.fn(),
+  receiveNotification: vi.fn<typeof receiveNotification>(),
+  deleteNotification: vi.fn<typeof deleteNotification>(),
 }));
 
 const credentials = {
@@ -27,7 +30,7 @@ function openChat() {
 
 // Промис, который тест завершает сам, — чтобы увидеть состояние «идёт запрос».
 function deferred<T>() {
-  let resolve: (value: T) => void = () => {};
+  let resolve!: (value: T) => void;
   const promise = new Promise<T>((r) => {
     resolve = r;
   });
@@ -35,12 +38,8 @@ function deferred<T>() {
 }
 
 beforeEach(() => {
-  vi.mocked(checkAccount).mockReset();
-  vi.mocked(sendMessage).mockReset();
   // Очередь пуста: receive висит, как long-poll. Мгновенный ответ крутил бы цикл без пауз.
-  vi.mocked(receiveNotification)
-    .mockReset()
-    .mockImplementation(() => new Promise(() => {}));
+  vi.mocked(receiveNotification).mockImplementation(() => new Promise(() => {}));
   useChatStore.getState().reset();
   useSessionStore.getState().signIn(credentials);
   sessionStorage.clear();
@@ -226,7 +225,7 @@ describe('ChatPage: отправка', () => {
     expect(screen.getByText('Сообщений пока нет. Напишите первое.')).toBeInTheDocument();
   });
 
-  it('текст сообщения выводится как текст, HTML не исполняется', async () => {
+  it('текст сообщения выводится как текст, HTML не исполняется', () => {
     useChatStore.getState().addChat({ chatId: '10000000', phone: '79991234567' });
     useChatStore.getState().addMessage({
       idMessage: 'BAE5F4886F6F2D05',
@@ -289,6 +288,7 @@ describe('ChatPage: приём', () => {
     await within(chatList).findByText('Привет из MAX');
 
     const [first] = within(chatList).getAllByRole('button');
+    assert.isDefined(first);
     expect(first).toHaveTextContent('+79991234567');
     expect(first.querySelector('time')).toHaveAttribute(
       'dateTime',

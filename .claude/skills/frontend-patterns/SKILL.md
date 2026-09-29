@@ -89,10 +89,16 @@ src/
 
 ## TypeScript
 
-- По ходу работы: **`npx tsc -p tsconfig.app.json --noEmit`**. Голый `tsc --noEmit` в шаблоне
-  Vite проверяет 0 файлов: корневой `tsconfig.json` — solution-style (`"files": []` +
-  `references`), без `-b` компилируется пустое множество с кодом 0.
-- `npm run build` (там `tsc -b`) — только в `/finish`.
+- По ходу работы: **`npm run typecheck`** (`tsc -b` — оба проекта: `src/` и `vite.config.ts`).
+  Голый `tsc --noEmit` в шаблоне Vite проверяет 0 файлов: корневой `tsconfig.json` —
+  solution-style (`"files": []` + `references`), без `-b` компилируется пустое множество с кодом 0.
+- `npm run build` (там тот же `tsc -b`) — только в `/finish`.
+- Флаги сверх `strict`: `noUncheckedIndexedAccess` — индекс массива и записи даёт `T | undefined`.
+  В коде — `?? запасное` или явная проверка, не `!`; в тестах — `assert.isDefined(x)` из `vitest`
+  (сужает тип). Плюс `noImplicitReturns`, `noImplicitOverride`.
+- Линтер по типам (`npm run lint`): устаревшее (`no-deprecated`), `any` из `JSON.parse` и прочего
+  (`no-unsafe-*` — разбирать в `unknown` и сужать), неполный `switch` по союзу без `default`,
+  потерянные промисы. Намеренное нарушение — `// eslint-disable-next-line <правило> -- причина`.
 
 ## Стили
 
@@ -117,8 +123,9 @@ styles/
 
 ```bash
 npx vitest run <файл>                     # по ходу работы — только затронутое
-npx tsc -p tsconfig.app.json --noEmit     # типы, дёшево
-npm run test:run                          # весь набор — ТОЛЬКО в /finish
+npm run typecheck                         # типы, дёшево
+npm run lint                              # oxlint с правилами по типам
+npm run test:run -- --maxWorkers=2        # весь набор — ТОЛЬКО в /finish
 npm run build                             # сборка — ТОЛЬКО в /finish
 ```
 
@@ -128,5 +135,14 @@ npm run build                             # сборка — ТОЛЬКО в /fi
 - компонент с логикой → тест взаимодействий (отправка, валидация формы входа и нового чата)
 
 Сеть не ходит: мокаем функции `services/` (`vi.mock`), а не `fetch` внутри транспорта.
+
+- Мок — с типом: `vi.mock('@/services/chatService', () => ({ sendMessage: vi.fn<typeof sendMessage>() }))`
+  (`vitest/require-mock-type-parameters`); `typeof` импортированной функции — только тип, подъём
+  `vi.mock` не мешает.
+- Моки сбрасывает конфиг (`mockReset: true` в `vite.config.ts`): перед каждым тестом `vi.fn()` —
+  пустая функция, `vi.fn(impl)` — снова `impl`. Ручной `mockReset()` в `beforeEach` не пишем.
+- Без условий внутри `it` (`vitest/no-conditional-in-test`): ветвление — в хелпере модуля.
+  Состояние persist-сторов — `readPersistedState(key)` из `src/test/persistedState.ts`.
+
 Учётные данные в тестах — заведомо фейковые (`idInstance: '1101000000'`, `apiTokenInstance:
 'test-token'`), не реальные.

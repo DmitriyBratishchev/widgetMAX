@@ -10,7 +10,7 @@ const credentials: GreenApiCredentials = {
 
 // Транспорт — нижний слой: подменить можно только fetch.
 function stubFetch(implementation: () => Promise<Response>) {
-  const fetchMock = vi.fn(implementation);
+  const fetchMock = vi.fn<typeof fetch>(implementation);
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
 }
@@ -71,7 +71,7 @@ describe('greenApiRequest', () => {
     }).catch((e: unknown) => e);
 
     expect(error).toMatchObject({ kind: 'http', status: 429 });
-    expect((error as Error).message).not.toContain('test-token');
+    expect(String(error)).not.toContain('test-token');
   });
 
   it('отправляет тело JSON с заголовком Content-Type', async () => {
@@ -105,7 +105,7 @@ describe('greenApiRequest', () => {
 
     expect(error).toBeInstanceOf(GreenApiError);
     expect(error).toMatchObject({ kind: 'http', status: 401 });
-    expect((error as Error).message).not.toContain('test-token');
+    expect(String(error)).not.toContain('test-token');
   });
 
   it('404 с HTML-телом → ошибка по статусу, тело не разбирается', async () => {
