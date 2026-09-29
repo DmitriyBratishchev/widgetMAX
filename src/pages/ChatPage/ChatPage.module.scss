@@ -26,13 +26,45 @@
   color: var(--color-text-secondary);
 }
 
-.content {
+.body {
   display: flex;
   flex: 1;
+  min-height: 0;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  width: var(--layout-sidebar-width);
+  border-right: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.chat {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--color-chat-background);
+}
+
+.chatHeader {
+  display: flex;
   align-items: center;
-  justify-content: center;
+  flex-shrink: 0;
+  height: var(--layout-header-height);
+  padding: 0 var(--space-4);
+  border-bottom: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.chatTitle {
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
 }
 
 .placeholder {
+  margin: auto;
   color: var(--color-text-muted);
 }
