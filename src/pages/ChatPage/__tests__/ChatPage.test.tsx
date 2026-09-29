@@ -4,11 +4,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GreenApiError } from '@/api/greenApiClient';
 import { ChatPage } from '@/pages/ChatPage/ChatPage';
 import { checkAccount, sendMessage } from '@/services/chatService';
+import { receiveNotification } from '@/services/notificationService';
 import { useChatStore } from '@/stores/chatStore';
 import { useSessionStore } from '@/stores/sessionStore';
 import { renderWithQueryClient } from '@/test/renderWithQueryClient';
 
 vi.mock('@/services/chatService', () => ({ checkAccount: vi.fn(), sendMessage: vi.fn() }));
+vi.mock('@/services/notificationService', () => ({
+  receiveNotification: vi.fn(),
+  deleteNotification: vi.fn(),
+}));
 
 const credentials = {
   idInstance: '1101000000',
@@ -32,6 +37,10 @@ function deferred<T>() {
 beforeEach(() => {
   vi.mocked(checkAccount).mockReset();
   vi.mocked(sendMessage).mockReset();
+  // Очередь пуста: receive висит, как long-poll. Мгновенный ответ крутил бы цикл без пауз.
+  vi.mocked(receiveNotification)
+    .mockReset()
+    .mockImplementation(() => new Promise(() => {}));
   useChatStore.getState().reset();
   useSessionStore.getState().signIn(credentials);
   sessionStorage.clear();
@@ -210,5 +219,28 @@ describe('ChatPage: отправка', () => {
     const feed = screen.getByRole('list', { name: 'Сообщения' });
     expect(within(feed).getByText('<b>x</b><img src=x onerror=alert(1)>')).toBeInTheDocument();
     expect(feed.querySelector('b, img')).toBeNull();
+  });
+});
+
+describe('ChatPage: приём', () => {
+  it('ответ собеседника появляется в открытом чате без перезагрузки', async () => {
+    openChat();
+    vi.mocked(receiveNotification).mockResolvedValueOnce({
+      receiptId: 1234567,
+      body: {
+        typeWebhook: 'incomingMessageReceived',
+        timestamp: 1763115112,
+        idMessage: '1763115112345',
+        senderData: { chatId: '10000000' },
+        messageData: {
+          typeMessage: 'textMessage',
+          textMessageData: { textMessage: 'Привет из MAX' },
+        },
+      },
+    });
+    renderWithQueryClient(<ChatPage />);
+
+    const messages = await screen.findByRole('list', { name: 'Сообщения' });
+    expect(within(messages).getByText('Привет из MAX')).toBeInTheDocument();
   });
 });

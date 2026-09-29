@@ -1,5 +1,6 @@
 import { Button } from '@/components/ui/Button/Button';
 import { formatPhone } from '@/helpers/phone';
+import { useNotificationPolling } from '@/hooks/useNotificationPolling';
 import { useSignOut } from '@/hooks/useSignOut';
 import { useChatStore } from '@/stores/chatStore';
 import { useSessionStore } from '@/stores/sessionStore';
@@ -14,6 +15,8 @@ export function ChatPage() {
   const idInstance = useSessionStore((s) => s.credentials?.idInstance);
   const signOut = useSignOut();
   const activeChat = useChatStore((s) => s.chats.find((c) => c.chatId === s.activeChatId));
+  // Приём ответов из MAX: цикл живёт, пока открыт экран чатов, и останавливается при выходе.
+  useNotificationPolling();
 
   return (
     <div className={styles.page}>
