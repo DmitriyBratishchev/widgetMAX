@@ -8,6 +8,11 @@ import { renderWithQueryClient } from '@/test/renderWithQueryClient';
 
 vi.mock('@/services/instanceService', () => ({ getStateInstance: vi.fn() }));
 vi.mock('@/services/chatService', () => ({ checkAccount: vi.fn(), sendMessage: vi.fn() }));
+// Очередь пуста: receive висит, как long-poll, — экран чатов не уходит в сеть и не крутит цикл.
+vi.mock('@/services/notificationService', () => ({
+  receiveNotification: vi.fn(() => new Promise(() => {})),
+  deleteNotification: vi.fn(),
+}));
 
 const credentials = {
   idInstance: '1101000000',

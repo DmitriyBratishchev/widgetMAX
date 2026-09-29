@@ -34,6 +34,46 @@ describe('greenApiRequest', () => {
     expect(result).toEqual({ stateInstance: 'authorized' });
   });
 
+  it('query ставит после токена', async () => {
+    const fetchMock = stubFetch(() => Promise.resolve(new Response('null', { status: 200 })));
+
+    await greenApiRequest(credentials, 'receiveNotification', { query: { receiveTimeout: 20 } });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://1101.api.green-api.com/waInstance1101000000/receiveNotification/test-token?receiveTimeout=20',
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
+  it('pathSuffix ставит отдельным сегментом после токена', async () => {
+    const fetchMock = stubFetch(() =>
+      Promise.resolve(new Response('{"result":true}', { status: 200 })),
+    );
+
+    await greenApiRequest(credentials, 'deleteNotification', {
+      httpMethod: 'DELETE',
+      pathSuffix: 1234567,
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://1101.api.green-api.com/waInstance1101000000/deleteNotification/test-token/1234567',
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+  });
+
+  it('ошибка запроса с query и pathSuffix — без токена в сообщении', async () => {
+    stubFetch(() => Promise.resolve(new Response(null, { status: 429 })));
+
+    const error = await greenApiRequest(credentials, 'deleteNotification', {
+      httpMethod: 'DELETE',
+      pathSuffix: 1234567,
+      query: { receiveTimeout: 20 },
+    }).catch((e: unknown) => e);
+
+    expect(error).toMatchObject({ kind: 'http', status: 429 });
+    expect((error as Error).message).not.toContain('test-token');
+  });
+
   it('отправляет тело JSON с заголовком Content-Type', async () => {
     const fetchMock = stubFetch(() => Promise.resolve(new Response('{}', { status: 200 })));
 

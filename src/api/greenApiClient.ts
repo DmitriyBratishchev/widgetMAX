@@ -23,21 +23,37 @@ interface GreenApiRequestOptions {
   httpMethod?: 'GET' | 'POST' | 'DELETE';
   body?: unknown;
   signal?: AbortSignal;
+  // Параметры строки запроса: GREEN-API ждёт их после токена (`…/{token}?receiveTimeout=20`).
+  query?: Record<string, string | number>;
+  // Сегмент пути после токена: `deleteNotification/{token}/{receiptId}`.
+  pathSuffix?: string | number;
 }
 
-function buildUrl(credentials: GreenApiCredentials, method: string): string {
+function buildUrl(
+  credentials: GreenApiCredentials,
+  method: string,
+  { query, pathSuffix }: Pick<GreenApiRequestOptions, 'query' | 'pathSuffix'>,
+): string {
   const apiUrl = credentials.apiUrl.replace(/\/+$/, '');
-  return `${apiUrl}/waInstance${credentials.idInstance}/${method}/${credentials.apiTokenInstance}`;
+  let url = `${apiUrl}/waInstance${credentials.idInstance}/${method}/${credentials.apiTokenInstance}`;
+  if (pathSuffix !== undefined) url += `/${encodeURIComponent(String(pathSuffix))}`;
+  if (query) {
+    const params = new URLSearchParams(
+      Object.entries(query).map(([key, value]) => [key, String(value)]),
+    );
+    url += `?${params.toString()}`;
+  }
+  return url;
 }
 
 export async function greenApiRequest<T>(
   credentials: GreenApiCredentials,
   method: string,
-  { httpMethod = 'GET', body, signal }: GreenApiRequestOptions = {},
+  { httpMethod = 'GET', body, signal, query, pathSuffix }: GreenApiRequestOptions = {},
 ): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(buildUrl(credentials, method), {
+    response = await fetch(buildUrl(credentials, method, { query, pathSuffix }), {
       method: httpMethod,
       headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
