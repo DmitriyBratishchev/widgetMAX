@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Avatar } from '@/components/ui/Avatar/Avatar';
-import { formatMessageTime } from '@/helpers/formatTime';
+import { cx } from '@/helpers/cx';
+import { formatIsoDateTime, formatMessageTime } from '@/helpers/formatTime';
 import { formatPhone, getPhoneAvatarLabel } from '@/helpers/phone';
 import { useChatStore } from '@/stores/chatStore';
 import styles from './ChatList.module.scss';
@@ -45,7 +46,7 @@ export function ChatList() {
                 };
               }}
               type="button"
-              className={[styles.item, isActive && styles.active].filter(Boolean).join(' ')}
+              className={cx(styles.item, isActive && styles.active)}
               aria-current={isActive ? 'true' : undefined}
               onClick={() => selectChat(chat.chatId)}
             >
@@ -56,7 +57,7 @@ export function ChatList() {
                   {lastMessage && (
                     <time
                       className={styles.time}
-                      dateTime={new Date(lastMessage.timestamp).toISOString()}
+                      dateTime={formatIsoDateTime(lastMessage.timestamp)}
                     >
                       {formatMessageTime(lastMessage.timestamp)}
                     </time>

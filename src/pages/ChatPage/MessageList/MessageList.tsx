@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { formatMessageTime } from '@/helpers/formatTime';
+import { cx } from '@/helpers/cx';
+import { formatIsoDateTime, formatMessageTime } from '@/helpers/formatTime';
 import { useChatStore, type ChatMessage } from '@/stores/chatStore';
 import styles from './MessageList.module.scss';
 
@@ -39,14 +40,11 @@ export function MessageList({ chatId }: MessageListProps) {
       ) : (
         <ol ref={listRef} className={styles.list} aria-label="Сообщения">
           {messages.map((message) => (
-            <li
-              key={message.idMessage}
-              className={`${styles.message} ${styles[message.direction]}`}
-            >
+            <li key={message.idMessage} className={cx(styles.message, styles[message.direction])}>
               <span className={styles.direction}>{DIRECTION_LABELS[message.direction]} </span>
               {/* Только текст: React экранирует его, HTML из сообщения не исполняется (rules.md §7). */}
               <p className={styles.text}>{message.text}</p>
-              <time className={styles.time} dateTime={new Date(message.timestamp).toISOString()}>
+              <time className={styles.time} dateTime={formatIsoDateTime(message.timestamp)}>
                 {formatMessageTime(message.timestamp)}
               </time>
             </li>

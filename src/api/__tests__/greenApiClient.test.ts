@@ -1,11 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GreenApiError, greenApiRequest, REQUEST_TIMEOUT_MS } from '@/api/greenApiClient';
+import { TEST_CREDENTIALS } from '@/test/fixtures';
 import type { GreenApiCredentials } from '@/types/greenApi';
 
+// Слэш в конце apiUrl — как вводят руками; транспорт не должен дать «//» в URL.
 const credentials: GreenApiCredentials = {
-  idInstance: '1101000000',
-  apiTokenInstance: 'test-token',
-  apiUrl: 'https://1101.api.green-api.com/',
+  ...TEST_CREDENTIALS,
+  apiUrl: `${TEST_CREDENTIALS.apiUrl}/`,
 };
 
 // Транспорт — нижний слой: подменить можно только fetch.
@@ -88,7 +89,7 @@ describe('greenApiRequest', () => {
     }).catch((e: unknown) => e);
 
     expect(error).toMatchObject({ kind: 'http', status: 429 });
-    expect(String(error)).not.toContain('test-token');
+    expect(String(error)).not.toContain(TEST_CREDENTIALS.apiTokenInstance);
   });
 
   it('отправляет тело JSON с заголовком Content-Type', async () => {
@@ -132,7 +133,7 @@ describe('greenApiRequest', () => {
 
     expect(error).toBeInstanceOf(GreenApiError);
     expect(error).toMatchObject({ kind: 'response' });
-    expect(String(error)).not.toContain('test-token');
+    expect(String(error)).not.toContain(TEST_CREDENTIALS.apiTokenInstance);
   });
 
   it('401 с пустым телом → GreenApiError со статусом, без токена в сообщении', async () => {
@@ -142,7 +143,7 @@ describe('greenApiRequest', () => {
 
     expect(error).toBeInstanceOf(GreenApiError);
     expect(error).toMatchObject({ kind: 'http', status: 401 });
-    expect(String(error)).not.toContain('test-token');
+    expect(String(error)).not.toContain(TEST_CREDENTIALS.apiTokenInstance);
   });
 
   it('404 с HTML-телом → ошибка по статусу, тело не разбирается', async () => {

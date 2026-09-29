@@ -1,4 +1,6 @@
 import { GreenApiError } from '@/api/greenApiClient';
+import { RATE_LIMIT_ERROR_TEXT } from '@/helpers/apiErrorText';
+import { MAX_MESSAGE_LENGTH } from '@/helpers/message';
 
 // CheckAccount ответил exist: false. Бросает хук, чтобы отказ пришёл в UI тем же путём, что и
 // ошибки API, — через mutation.error.
@@ -25,7 +27,7 @@ function describeCommonError(error: GreenApiError): string | null {
     case 401:
       return 'GREEN-API не принял учётные данные. Выйдите и войдите заново.';
     case 429:
-      return 'Слишком частые запросы. Подождите пару секунд и попробуйте снова.';
+      return RATE_LIMIT_ERROR_TEXT;
     case 466:
       return 'Превышены ограничения тарифа GREEN-API (на тарифе Developer — до 3 чатов).';
     default:
@@ -58,7 +60,7 @@ export function getSendMessageErrorMessage(error: unknown): string {
     if (common) return common;
     switch (error.status) {
       case 400:
-        return 'GREEN-API отклонил сообщение. Текст — не длиннее 4000 символов.';
+        return `GREEN-API отклонил сообщение. Текст — не длиннее ${MAX_MESSAGE_LENGTH} символов.`;
       case 403:
         return 'Отправка временно ограничена для аккаунта MAX. Подробности — в личном кабинете GREEN-API.';
       default:

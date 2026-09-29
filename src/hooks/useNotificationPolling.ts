@@ -13,7 +13,7 @@ export const RECEIVE_TIMEOUT_SECONDS = 20;
 export const EMPTY_QUEUE_PAUSE_MS = 1_000;
 // Пауза после ошибки (сеть, таймаут, 429, 5xx): растёт по таблице, дальше — потолок; после успеха —
 // сброс.
-export const RETRY_DELAYS_MS = [1_000, 2_000, 4_000, 8_000, 16_000];
+export const RETRY_DELAYS_MS = [1_000, 2_000, 4_000, 8_000, 16_000] as const;
 export const MAX_RETRY_DELAY_MS = 30_000;
 
 // DeleteNotification ответил result: false — уведомление осталось в очереди.

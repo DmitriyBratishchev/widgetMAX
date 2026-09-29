@@ -52,7 +52,8 @@ export const useChatStore = create<ChatState>()(
       selectChat: (chatId) => set({ activeChatId: chatId }),
       // «Назад» на узком экране: к списку чатов.
       closeChat: () => set({ activeChatId: null }),
-      // Дедуп по idMessage: WM-03 получит эхо своей же отправки (outgoingAPIMessageReceived).
+      // Дедуп по idMessage: эхо своей же отправки (outgoingAPIMessageReceived) может прийти и из
+      // очереди уведомлений (вживую не проверено — ресёрч max-chat §2.4).
       // Новое сообщение поднимает свой чат в начало списка — сортировка по последней активности.
       addMessage: (message) =>
         set((state) => {

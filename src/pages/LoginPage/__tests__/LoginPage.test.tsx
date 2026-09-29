@@ -5,6 +5,7 @@ import { GreenApiError } from '@/api/greenApiClient';
 import { LoginPage } from '@/pages/LoginPage/LoginPage';
 import { getStateInstance } from '@/services/instanceService';
 import { useSessionStore } from '@/stores/sessionStore';
+import { TEST_CREDENTIALS } from '@/test/fixtures';
 import { renderWithQueryClient } from '@/test/renderWithQueryClient';
 
 vi.mock('@/services/instanceService', () => ({
@@ -70,20 +71,14 @@ describe('LoginPage', () => {
     renderWithQueryClient(<LoginPage />);
     const { idInstance, token } = getFields();
 
-    await user.type(idInstance, '1101000000');
-    await user.type(token, 'test-token');
+    await user.type(idInstance, TEST_CREDENTIALS.idInstance);
+    await user.type(token, TEST_CREDENTIALS.apiTokenInstance);
     await user.click(getFields().submit);
 
     expect(screen.getByRole('button', { name: 'Входим…' })).toBeDisabled();
 
     resolveState({ stateInstance: 'authorized' });
-    await waitFor(() =>
-      expect(useSessionStore.getState().credentials).toEqual({
-        idInstance: '1101000000',
-        apiTokenInstance: 'test-token',
-        apiUrl: 'https://1101.api.green-api.com',
-      }),
-    );
+    await waitFor(() => expect(useSessionStore.getState().credentials).toEqual(TEST_CREDENTIALS));
   });
 
   it('неверный токен (401) → понятная ошибка в role=alert, без токена', async () => {
@@ -94,14 +89,32 @@ describe('LoginPage', () => {
     renderWithQueryClient(<LoginPage />);
     const { idInstance, token } = getFields();
 
-    await user.type(idInstance, '1101000000');
-    await user.type(token, 'test-token');
+    await user.type(idInstance, TEST_CREDENTIALS.idInstance);
+    await user.type(token, TEST_CREDENTIALS.apiTokenInstance);
     await user.click(getFields().submit);
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Неверный idInstance или apiTokenInstance');
-    expect(alert).not.toHaveTextContent('test-token');
+    expect(alert).not.toHaveTextContent(TEST_CREDENTIALS.apiTokenInstance);
     expect(useSessionStore.getState().credentials).toBeNull();
+  });
+
+  it('после отказа GREEN-API правка любого поля убирает текст ошибки', async () => {
+    vi.mocked(getStateInstance).mockRejectedValue(
+      new GreenApiError('getStateInstance', 'http', 401),
+    );
+    const user = userEvent.setup();
+    renderWithQueryClient(<LoginPage />);
+    const { idInstance, token } = getFields();
+
+    await user.type(idInstance, TEST_CREDENTIALS.idInstance);
+    await user.type(token, TEST_CREDENTIALS.apiTokenInstance);
+    await user.click(getFields().submit);
+    await screen.findByRole('alert');
+
+    await user.type(token, '2');
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 });
 
@@ -122,8 +135,8 @@ describe('LoginPage: фокус', () => {
     renderWithQueryClient(<LoginPage />);
     const { idInstance, token, apiUrl } = getFields();
 
-    await user.type(idInstance, '1101000000');
-    await user.type(token, 'test-token');
+    await user.type(idInstance, TEST_CREDENTIALS.idInstance);
+    await user.type(token, TEST_CREDENTIALS.apiTokenInstance);
     await user.clear(apiUrl);
     await user.type(apiUrl, 'http://1101.api.green-api.com');
     await user.click(getFields().submit);
@@ -140,8 +153,8 @@ describe('LoginPage: фокус', () => {
     renderWithQueryClient(<LoginPage />);
     const { idInstance, token } = getFields();
 
-    await user.type(idInstance, '1101000000');
-    await user.type(token, 'test-token');
+    await user.type(idInstance, TEST_CREDENTIALS.idInstance);
+    await user.type(token, TEST_CREDENTIALS.apiTokenInstance);
     await user.click(getFields().submit);
 
     await screen.findByRole('alert');

@@ -11,3 +11,8 @@
   white-space: nowrap;
   border: 0;
 }
+
+// Кольцо фокуса — одно на всё приложение; цвет держит контраст 3:1 на всех фонах (WM-07).
+@mixin focus-ring {
+  outline: var(--focus-ring-width) solid var(--color-focus-ring);
+}
