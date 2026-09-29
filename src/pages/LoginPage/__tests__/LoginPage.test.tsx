@@ -104,3 +104,47 @@ describe('LoginPage', () => {
     expect(useSessionStore.getState().credentials).toBeNull();
   });
 });
+
+describe('LoginPage: фокус', () => {
+  it('пустая форма → фокус на idInstance с текстом ошибки', async () => {
+    const user = userEvent.setup();
+    renderWithQueryClient(<LoginPage />);
+
+    await user.click(getFields().submit);
+
+    const { idInstance } = getFields();
+    expect(idInstance).toHaveFocus();
+    expect(idInstance).toHaveAccessibleDescription('Введите idInstance');
+  });
+
+  it('неверен только apiUrl → фокус на apiUrl', async () => {
+    const user = userEvent.setup();
+    renderWithQueryClient(<LoginPage />);
+    const { idInstance, token, apiUrl } = getFields();
+
+    await user.type(idInstance, '1101000000');
+    await user.type(token, 'test-token');
+    await user.clear(apiUrl);
+    await user.type(apiUrl, 'http://1101.api.green-api.com');
+    await user.click(getFields().submit);
+
+    expect(apiUrl).toHaveFocus();
+    expect(getStateInstance).not.toHaveBeenCalled();
+  });
+
+  it('отказ GREEN-API (401) → фокус на idInstance', async () => {
+    vi.mocked(getStateInstance).mockRejectedValue(
+      new GreenApiError('getStateInstance', 'http', 401),
+    );
+    const user = userEvent.setup();
+    renderWithQueryClient(<LoginPage />);
+    const { idInstance, token } = getFields();
+
+    await user.type(idInstance, '1101000000');
+    await user.type(token, 'test-token');
+    await user.click(getFields().submit);
+
+    await screen.findByRole('alert');
+    expect(idInstance).toHaveFocus();
+  });
+});

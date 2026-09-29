@@ -1,3 +1,13 @@
+@use '@/styles/mixins/a11y' as *;
+
+// Live-регион ленты: занимает место между шапкой и полем ввода, прокручивается список внутри.
+.feed {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .list {
   display: flex;
   flex: 1;
@@ -28,6 +38,10 @@
   align-self: flex-end;
   border-bottom-right-radius: var(--radius-xs);
   background: var(--color-message-outgoing);
+}
+
+.direction {
+  @include visually-hidden;
 }
 
 .text {

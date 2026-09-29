@@ -346,3 +346,167 @@ describe('ChatPage: приём', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/Приём сообщений остановлен/);
   });
 });
+
+describe('ChatPage: скринридер', () => {
+  it('лента — live-регион role=log с aria-live=polite, есть и в пустом чате', () => {
+    openChat();
+    renderWithQueryClient(<ChatPage />);
+
+    const log = screen.getByRole('log');
+    expect(log).toHaveAttribute('aria-live', 'polite');
+    expect(log).toHaveTextContent('Сообщений пока нет. Напишите первое.');
+  });
+
+  it('у сообщения есть текст направления для скринридера', () => {
+    openChat();
+    useChatStore.getState().addMessage({
+      idMessage: 'in-1',
+      chatId: '10000000',
+      text: 'Привет из MAX',
+      direction: 'incoming',
+      timestamp: 1790000000000,
+    });
+    useChatStore.getState().addMessage({
+      idMessage: 'out-1',
+      chatId: '10000000',
+      text: 'Привет',
+      direction: 'outgoing',
+      timestamp: 1790000060000,
+    });
+    renderWithQueryClient(<ChatPage />);
+
+    const [incoming, outgoing] = within(screen.getByRole('log')).getAllByRole('listitem');
+    expect(incoming).toHaveTextContent('Собеседник: Привет из MAX');
+    expect(outgoing).toHaveTextContent('Вы: Привет');
+  });
+
+  it('другой чат — новый live-регион: история не зачитывается', async () => {
+    useChatStore.getState().addChat({ chatId: '10000000', phone: '79991234567' });
+    useChatStore.getState().addChat({ chatId: '20000000', phone: '79990000000' });
+    const user = userEvent.setup();
+    renderWithQueryClient(<ChatPage />);
+    const firstLog = screen.getByRole('log');
+
+    await user.click(screen.getByRole('button', { name: /\+79991234567/ }));
+
+    expect(screen.getByRole('log')).not.toBe(firstLog);
+  });
+
+  it('плашка остановки не перемонтируется при открытии и закрытии чата и лежит вне ленты', async () => {
+    useChatStore.getState().addChat({ chatId: '10000000', phone: '79991234567' });
+    useChatStore.getState().closeChat();
+    vi.mocked(receiveNotification).mockRejectedValueOnce(
+      new GreenApiError('receiveNotification', 'http', 401),
+    );
+    const user = userEvent.setup();
+    renderWithQueryClient(<ChatPage />);
+    const alert = await screen.findByRole('alert');
+
+    await user.click(screen.getByRole('button', { name: /\+79991234567/ }));
+    expect(screen.getByRole('alert')).toBe(alert);
+    expect(screen.getByRole('log')).not.toContainElement(alert);
+
+    await user.click(screen.getByRole('button', { name: 'Назад к списку чатов' }));
+    expect(screen.getByRole('alert')).toBe(alert);
+  });
+});
+
+describe('ChatPage: фокус', () => {
+  it('«Назад» → фокус на закрытом чате в списке', async () => {
+    useChatStore.getState().addChat({ chatId: '20000000', phone: '79990000000' });
+    openChat();
+    const user = userEvent.setup();
+    renderWithQueryClient(<ChatPage />);
+
+    await user.click(screen.getByRole('button', { name: 'Назад к списку чатов' }));
+
+    expect(screen.getByRole('button', { name: /\+79991234567/ })).toHaveFocus();
+  });
+
+  it('клик по чату в списке → фокус в поле «Сообщение»', async () => {
+    useChatStore.getState().addChat({ chatId: '10000000', phone: '79991234567' });
+    useChatStore.getState().closeChat();
+    const user = userEvent.setup();
+    renderWithQueryClient(<ChatPage />);
+
+    await user.click(screen.getByRole('button', { name: /\+79991234567/ }));
+
+    expect(screen.getByLabelText('Сообщение')).toHaveFocus();
+  });
+
+  it('«Создать чат» → фокус в поле «Сообщение» нового чата', async () => {
+    vi.mocked(checkAccount).mockResolvedValue({ exist: true, chatId: '10000000' });
+    const user = userEvent.setup();
+    renderWithQueryClient(<ChatPage />);
+
+    await user.type(screen.getByLabelText('Номер телефона'), '+7 999 123-45-67');
+    await user.click(screen.getByRole('button', { name: 'Создать чат' }));
+
+    expect(await screen.findByLabelText('Сообщение')).toHaveFocus();
+  });
+
+  it('«Перейти в чат» → фокус в поле «Сообщение»', async () => {
+    useChatStore.getState().addChat({ chatId: '10000000', phone: '79991234567' });
+    useChatStore.getState().closeChat();
+    const user = userEvent.setup();
+    renderWithQueryClient(<ChatPage />);
+
+    await user.type(screen.getByLabelText('Номер телефона'), '+7 999 123-45-67');
+    await user.click(screen.getByRole('button', { name: 'Перейти в чат' }));
+
+    expect(await screen.findByLabelText('Сообщение')).toHaveFocus();
+  });
+
+  it('Tab по списку чатов не открывает чат и оставляет фокус в списке', async () => {
+    useChatStore.getState().addChat({ chatId: '20000000', phone: '79990000000' });
+    useChatStore.getState().addChat({ chatId: '10000000', phone: '79991234567' });
+    useChatStore.getState().closeChat();
+    const user = userEvent.setup();
+    renderWithQueryClient(<ChatPage />);
+    const [first, second] = within(screen.getByRole('list', { name: 'Чаты' })).getAllByRole(
+      'button',
+    );
+    assert.isDefined(first);
+
+    first.focus();
+    await user.tab();
+
+    expect(second).toHaveFocus();
+    expect(screen.queryByLabelText('Сообщение')).not.toBeInTheDocument();
+  });
+
+  it('нажатие «Отправить» → фокус остаётся в поле «Сообщение»', async () => {
+    vi.mocked(sendMessage).mockReturnValue(new Promise(() => {}));
+    openChat();
+    const user = userEvent.setup();
+    renderWithQueryClient(<ChatPage />);
+
+    await user.type(screen.getByLabelText('Сообщение'), 'Привет');
+    await user.click(screen.getByRole('button', { name: 'Отправить' }));
+
+    expect(screen.getByRole('button', { name: 'Отправляем…' })).toBeDisabled();
+    expect(screen.getByLabelText('Сообщение')).toHaveFocus();
+  });
+
+  it('неверный номер → фокус в поле номера', async () => {
+    const user = userEvent.setup();
+    renderWithQueryClient(<ChatPage />);
+
+    await user.type(screen.getByLabelText('Номер телефона'), '12345');
+    await user.click(screen.getByRole('button', { name: 'Создать чат' }));
+
+    expect(screen.getByLabelText('Номер телефона')).toHaveFocus();
+  });
+
+  it('отказ CheckAccount → фокус в поле номера', async () => {
+    vi.mocked(checkAccount).mockResolvedValue({ exist: false, chatId: '' });
+    const user = userEvent.setup();
+    renderWithQueryClient(<ChatPage />);
+
+    await user.type(screen.getByLabelText('Номер телефона'), '+7 999 123-45-67');
+    await user.click(screen.getByRole('button', { name: 'Создать чат' }));
+
+    await screen.findByRole('alert');
+    expect(screen.getByLabelText('Номер телефона')).toHaveFocus();
+  });
+});

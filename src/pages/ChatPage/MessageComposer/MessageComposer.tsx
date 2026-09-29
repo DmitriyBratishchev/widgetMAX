@@ -1,4 +1,11 @@
-import { useState, type ChangeEvent, type KeyboardEvent, type SubmitEvent } from 'react';
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type KeyboardEvent,
+  type SubmitEvent,
+} from 'react';
 import { Button } from '@/components/ui/Button/Button';
 import { getSendMessageErrorMessage } from '@/helpers/chatError';
 import { useSendMessage } from '@/hooks/useSendMessage';
@@ -14,13 +21,22 @@ interface MessageComposerProps {
 export function MessageComposer({ chatId }: MessageComposerProps) {
   const send = useSendMessage();
   const [text, setText] = useState('');
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const canSend = text.trim() !== '' && !send.isPending;
+
+  // Композер монтируется заново на каждый открытый чат (key в ChatPage): открыли чат — можно
+  // сразу печатать. На узком экране кнопка чата в списке к этому моменту уже скрыта.
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   const submit = () => {
     if (!canSend) return;
     // Поле очищаем только после успеха: при ошибке набранный текст не теряется. Пока идёт отправка,
     // поле только для чтения — иначе очистка стёрла бы допечатанное.
     send.mutate({ chatId, text }, { onSuccess: () => setText('') });
+    // Нажатая кнопка на время отправки блокируется и теряет фокус — возвращаем его в поле.
+    inputRef.current?.focus();
   };
 
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
@@ -50,6 +66,7 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
       )}
       <div className={styles.row}>
         <textarea
+          ref={inputRef}
           className={styles.input}
           aria-label="Сообщение"
           placeholder="Сообщение"
