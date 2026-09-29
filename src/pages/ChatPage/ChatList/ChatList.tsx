@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Avatar } from '@/components/ui/Avatar/Avatar';
 import { formatMessageTime } from '@/helpers/formatTime';
 import { formatPhone, getPhoneAvatarLabel } from '@/helpers/phone';
@@ -10,6 +11,16 @@ export function ChatList() {
   const messagesByChatId = useChatStore((s) => s.messagesByChatId);
   const activeChatId = useChatStore((s) => s.activeChatId);
   const selectChat = useChatStore((s) => s.selectChat);
+  const itemRefs = useRef(new Map<string, HTMLButtonElement>());
+  const prevActiveChatId = useRef(activeChatId);
+
+  // «Назад» (closeChat — единственный, кто сбрасывает активный чат) размонтирует свою кнопку, и
+  // фокус упал бы на body. Возвращаем его на закрытый чат — туда, откуда пользователь пришёл.
+  useEffect(() => {
+    const closedChatId = prevActiveChatId.current;
+    prevActiveChatId.current = activeChatId;
+    if (closedChatId && !activeChatId) itemRefs.current.get(closedChatId)?.focus();
+  }, [activeChatId]);
 
   if (chats.length === 0) {
     return (
@@ -27,6 +38,12 @@ export function ChatList() {
         return (
           <li key={chat.chatId}>
             <button
+              ref={(button) => {
+                if (button) itemRefs.current.set(chat.chatId, button);
+                return () => {
+                  itemRefs.current.delete(chat.chatId);
+                };
+              }}
               type="button"
               className={[styles.item, isActive && styles.active].filter(Boolean).join(' ')}
               aria-current={isActive ? 'true' : undefined}

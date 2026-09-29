@@ -3,16 +3,21 @@
   --color-surface: var(--palette-white);
   --color-surface-hover: var(--palette-gray-100);
   --color-border: var(--palette-gray-200);
+  // Граница поля ввода — не меньше 3:1 к белому (WCAG 1.4.11), в отличие от разделителей колонок.
+  --color-input-border: var(--palette-gray-500);
 
   --color-text: var(--palette-gray-900);
   --color-text-secondary: var(--palette-gray-600);
-  --color-text-muted: var(--palette-gray-400);
+  // Совпадает с secondary: любой серый светлее даёт меньше 4,5:1 на фоне активного чата и своего
+  // пузыря (blue-100). Тише превью время делает кегль (коэффициенты — spec.md WM-07).
+  --color-text-muted: var(--palette-gray-600);
   --color-text-on-accent: var(--palette-white);
 
   --color-accent: var(--palette-blue-500);
   --color-accent-hover: var(--palette-blue-600);
-  --color-danger: var(--palette-red-500);
-  --color-focus-ring: var(--palette-blue-100);
+  --color-danger: var(--palette-red-600);
+  // Не меньше 3:1 к белому, к активному чату и к градиенту фона чата (WCAG 1.4.11).
+  --color-focus-ring: var(--palette-blue-700);
 
   --shadow-card: 0 4px 24px var(--palette-shadow);
 

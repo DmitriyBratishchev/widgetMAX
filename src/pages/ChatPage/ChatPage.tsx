@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { Avatar } from '@/components/ui/Avatar/Avatar';
 import { Button } from '@/components/ui/Button/Button';
 import { formatPhone, getPhoneAvatarLabel } from '@/helpers/phone';
@@ -49,33 +50,36 @@ export function ChatPage() {
         <ChatList />
       </aside>
       <main className={styles.chat}>
+        {activeChat && (
+          <header className={styles.chatHeader}>
+            {/* Видна только на узком экране: на широком список и так рядом. */}
+            <button
+              type="button"
+              className={styles.back}
+              aria-label="Назад к списку чатов"
+              onClick={closeChat}
+            >
+              <svg className={styles.icon} viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M15.4 5.4 14 4l-8 8 8 8 1.4-1.4L8.8 12z" />
+              </svg>
+            </button>
+            <Avatar size="sm" label={getPhoneAvatarLabel(activeChat.phone)} />
+            <h2 className={styles.chatTitle}>{formatPhone(activeChat.phone)}</h2>
+          </header>
+        )}
+        {/* Одна позиция для чата и заглушки: при открытии и закрытии чата плашка не
+            перемонтируется, и скринридер не объявляет её заново. */}
+        {pollingStopAlert}
         {activeChat ? (
-          <>
-            <header className={styles.chatHeader}>
-              {/* Видна только на узком экране: на широком список и так рядом. */}
-              <button
-                type="button"
-                className={styles.back}
-                aria-label="Назад к списку чатов"
-                onClick={closeChat}
-              >
-                <svg className={styles.icon} viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M15.4 5.4 14 4l-8 8 8 8 1.4-1.4L8.8 12z" />
-                </svg>
-              </button>
-              <Avatar size="sm" label={getPhoneAvatarLabel(activeChat.phone)} />
-              <h2 className={styles.chatTitle}>{formatPhone(activeChat.phone)}</h2>
-            </header>
-            {pollingStopAlert}
+          // key: лента и поле ввода монтируются заново на каждый чат — у ленты свой live-регион
+          // (история при открытии не зачитывается), черновик не переезжает в другой чат, поле
+          // получает фокус при открытии.
+          <Fragment key={activeChat.chatId}>
             <MessageList chatId={activeChat.chatId} />
-            {/* key: черновик сообщения не переезжает в другой чат. */}
-            <MessageComposer key={activeChat.chatId} chatId={activeChat.chatId} />
-          </>
+            <MessageComposer chatId={activeChat.chatId} />
+          </Fragment>
         ) : (
-          <>
-            {pollingStopAlert}
-            <p className={styles.placeholder}>Выберите чат или создайте новый по номеру телефона</p>
-          </>
+          <p className={styles.placeholder}>Выберите чат или создайте новый по номеру телефона</p>
         )}
       </main>
     </div>

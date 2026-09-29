@@ -1,4 +1,5 @@
-import { useState, type ChangeEvent, type SubmitEvent } from 'react';
+import { useRef, useState, type ChangeEvent, type SubmitEvent } from 'react';
+import { flushSync } from 'react-dom';
 import { Button } from '@/components/ui/Button/Button';
 import { Input } from '@/components/ui/Input/Input';
 import { suggestApiUrl } from '@/helpers/apiUrl';
@@ -9,6 +10,8 @@ import type { GreenApiCredentials } from '@/types/greenApi';
 import styles from './LoginPage.module.scss';
 
 const EMPTY_VALUES: GreenApiCredentials = { idInstance: '', apiTokenInstance: '', apiUrl: '' };
+// Порядок полей на экране: при ошибках фокус уходит на первое невалидное.
+const FIELDS: (keyof GreenApiCredentials)[] = ['idInstance', 'apiTokenInstance', 'apiUrl'];
 
 export function LoginPage() {
   const signIn = useSignIn();
@@ -16,6 +19,12 @@ export function LoginPage() {
   const [errors, setErrors] = useState<CredentialsErrors>({});
   // Пока пользователь не правил apiUrl сам, поле следует за idInstance (ресёрч max-chat §3 Р3).
   const [isApiUrlEdited, setIsApiUrlEdited] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const focusField = (field: keyof GreenApiCredentials) => {
+    const input = formRef.current?.elements.namedItem(field);
+    if (input instanceof HTMLInputElement) input.focus();
+  };
 
   const handleChange = (field: keyof GreenApiCredentials) => (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -31,13 +40,21 @@ export function LoginPage() {
   const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     const validationErrors = validateCredentials(values);
-    setErrors(validationErrors);
-    if (Object.keys(validationErrors).length === 0) signIn.mutate(values);
+    // Ошибки — в DOM до фокуса: скринридер прочтёт поле вместе с aria-invalid и текстом ошибки.
+    flushSync(() => setErrors(validationErrors));
+    const invalidField = FIELDS.find((field) => validationErrors[field]);
+    if (invalidField) {
+      focusField(invalidField);
+      return;
+    }
+    // Отказ GREEN-API объявляет role="alert", а заблокированная на время запроса «Войти» теряет
+    // фокус. Возвращаем его в первое поле: 401 правится там, а сеть и 429 — Enter из любого поля.
+    signIn.mutate(values, { onError: () => focusField('idInstance') });
   };
 
   return (
     <main className={styles.page}>
-      <form className={styles.card} onSubmit={handleSubmit} noValidate>
+      <form ref={formRef} className={styles.card} onSubmit={handleSubmit} noValidate>
         <h1 className={styles.title}>widgetMAX</h1>
         <p className={styles.subtitle}>
           Войдите данными инстанса MAX из{' '}
@@ -48,6 +65,7 @@ export function LoginPage() {
 
         <Input
           label="idInstance"
+          name="idInstance"
           inputMode="numeric"
           autoComplete="off"
           value={values.idInstance}
@@ -56,6 +74,7 @@ export function LoginPage() {
         />
         <Input
           label="apiTokenInstance"
+          name="apiTokenInstance"
           type="password"
           autoComplete="off"
           value={values.apiTokenInstance}
@@ -64,6 +83,7 @@ export function LoginPage() {
         />
         <Input
           label="apiUrl"
+          name="apiUrl"
           type="url"
           autoComplete="off"
           value={values.apiUrl}
