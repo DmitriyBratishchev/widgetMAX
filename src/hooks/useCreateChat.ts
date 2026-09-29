@@ -1,8 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
-import { AccountNotFoundError } from '@/helpers/chatError';
+import { AccountNotFoundError, SessionEndedError } from '@/helpers/chatError';
 import { checkAccount } from '@/services/chatService';
 import { useChatStore, type Chat } from '@/stores/chatStore';
-import { useSessionStore } from '@/stores/sessionStore';
+import { isCurrentSession, useSessionStore } from '@/stores/sessionStore';
 
 // Принимает номер, уже нормализованный normalizePhone (11–12 цифр).
 export function useCreateChat() {
@@ -18,6 +18,8 @@ export function useCreateChat() {
 
       if (!credentials) throw new Error('Нет сессии GREEN-API');
       const { exist, chatId } = await checkAccount(credentials, Number(phone));
+      // Пока шла проверка, нажали «Выйти»: чат старой сессии не должен пережить выход.
+      if (!isCurrentSession(credentials)) throw new SessionEndedError();
       if (!exist || !chatId) throw new AccountNotFoundError();
       return { chatId, phone };
     },

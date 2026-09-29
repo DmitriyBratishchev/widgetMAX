@@ -11,7 +11,7 @@ const credentials = {
 };
 
 describe('notificationService', () => {
-  it('receiveNotification шлёт GET receiveNotification с receiveTimeout в query и signal', async () => {
+  it('receiveNotification шлёт GET с receiveTimeout в query, signal, nullable и таймаутом сверх long-poll', async () => {
     const notification = { receiptId: 1234567, body: { typeWebhook: 'stateInstanceChanged' } };
     vi.mocked(greenApiRequest).mockResolvedValue(notification);
     const { signal } = new AbortController();
@@ -20,6 +20,8 @@ describe('notificationService', () => {
     expect(greenApiRequest).toHaveBeenCalledWith(credentials, 'receiveNotification', {
       query: { receiveTimeout: 20 },
       signal,
+      nullable: true,
+      timeoutMs: 30_000,
     });
   });
 

@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { GreenApiError } from '@/api/greenApiClient';
 import { parseNotification } from '@/helpers/notification';
 import { deleteNotification, receiveNotification } from '@/services/notificationService';
 import { useChatStore } from '@/stores/chatStore';
@@ -10,12 +11,27 @@ export const RECEIVE_TIMEOUT_SECONDS = 20;
 // Пауза после пустого ответа. На живом инстансе MAX (2026-09-29) receiveNotification вернул null
 // за миллисекунды, а не через receiveTimeout, — без паузы цикл слал сотни запросов в секунду.
 export const EMPTY_QUEUE_PAUSE_MS = 1_000;
-// Пауза после ошибки (сеть, 429, 5xx): растёт по таблице, дальше — потолок; после успеха — сброс.
+// Пауза после ошибки (сеть, таймаут, 429, 5xx): растёт по таблице, дальше — потолок; после успеха —
+// сброс.
 export const RETRY_DELAYS_MS = [1_000, 2_000, 4_000, 8_000, 16_000];
 export const MAX_RETRY_DELAY_MS = 30_000;
 
 // DeleteNotification ответил result: false — уведомление осталось в очереди.
 class NotificationNotDeletedError extends Error {}
+
+// Почему цикл встал: GREEN-API не принял учётные данные (401/403) или ошибка в самом приложении.
+export type PollingStopReason = 'credentials-rejected' | 'unexpected-error';
+
+// null — ошибка проходит сама, её переживаем паузой: сеть, таймаут, 429, 5xx, некорректный ответ,
+// не удалённое уведомление. Отозванный токен сам не починится, а ошибку в коде повтор не исправит.
+function getStopReason(error: unknown): PollingStopReason | null {
+  if (error instanceof GreenApiError) {
+    const rejected = error.kind === 'http' && (error.status === 401 || error.status === 403);
+    return rejected ? 'credentials-rejected' : null;
+  }
+  if (error instanceof NotificationNotDeletedError) return null;
+  return 'unexpected-error';
+}
 
 function pause(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve) => {
@@ -40,7 +56,11 @@ function showMessage(body: unknown) {
 
 // Строго последовательно: receive → обработать → delete → следующий receive (skill green-api §3).
 // Удаляется каждое уведомление — иначе оно останется первым в очереди и приём встанет.
-async function pollNotifications(credentials: GreenApiCredentials, signal: AbortSignal) {
+async function pollNotifications(
+  credentials: GreenApiCredentials,
+  signal: AbortSignal,
+  onStop: (reason: PollingStopReason) => void,
+) {
   let failures = 0;
   /* eslint-disable eslint/no-await-in-loop -- шаги цикла строго последовательны по замыслу */
   while (!signal.aborted) {
@@ -58,8 +78,15 @@ async function pollNotifications(credentials: GreenApiCredentials, signal: Abort
         failures = 0;
         await pause(EMPTY_QUEUE_PAUSE_MS, signal);
       }
-    } catch {
+    } catch (error) {
       if (signal.aborted) return;
+      const stopReason = getStopReason(error);
+      if (stopReason) {
+        // Ошибки транспорта сюда не попадают (они GreenApiError), так что токена в выводе нет.
+        if (stopReason === 'unexpected-error' && import.meta.env.DEV) console.error(error);
+        onStop(stopReason);
+        return;
+      }
       // Не удалённое уведомление придёт снова — дубль в ленту не попадёт (дедуп по idMessage).
       failures += 1;
       await pause(RETRY_DELAYS_MS[failures - 1] ?? MAX_RETRY_DELAY_MS, signal);
@@ -68,16 +95,28 @@ async function pollNotifications(credentials: GreenApiCredentials, signal: Abort
   /* eslint-enable eslint/no-await-in-loop */
 }
 
+interface PollingStop {
+  credentials: GreenApiCredentials;
+  reason: PollingStopReason;
+}
+
 // Один цикл на сессию. Guard от двойного запуска в StrictMode — abort в cleanup: повторный mount
 // обрывает первый цикл, а receive из очереди ничего не удаляет, так что оборванный запрос не теряет
-// уведомлений.
-export function useNotificationPolling() {
+// уведомлений. Возвращает причину остановки цикла (null — цикл работает); показывает её страница.
+export function useNotificationPolling(): PollingStopReason | null {
   const credentials = useSessionStore((s) => s.credentials);
+  // Остановка привязана к объекту учётных данных: новый вход — новый объект, и причина прошлой
+  // сессии перестаёт действовать без сброса состояния в эффекте.
+  const [stop, setStop] = useState<PollingStop | null>(null);
 
   useEffect(() => {
     if (!credentials) return;
     const controller = new AbortController();
-    void pollNotifications(credentials, controller.signal);
+    void pollNotifications(credentials, controller.signal, (reason) =>
+      setStop({ credentials, reason }),
+    );
     return () => controller.abort();
   }, [credentials]);
+
+  return stop?.credentials === credentials ? stop.reason : null;
 }

@@ -120,6 +120,18 @@
   text-overflow: ellipsis;
 }
 
+// Приём сообщений встал: плашка над лентой, по ширине колонки ленты.
+.pollingStopped {
+  flex-shrink: 0;
+  width: min(100% - 2 * var(--space-4), var(--layout-feed-max-width));
+  margin: var(--space-2) auto 0;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+}
+
 // Плашка по центру: на градиентном фоне голый текст не читается.
 .placeholder {
   margin: auto;

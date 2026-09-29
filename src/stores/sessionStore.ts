@@ -26,3 +26,9 @@ export const useSessionStore = create<SessionState>()(
     },
   ),
 );
+
+// Сессия, в которой начат запрос, всё ещё текущая? Сравнение по ссылке: «Выйти» ставит null, а
+// каждый вход — новый объект, так что «вышел и снова вошёл тем же инстансом» — уже другая сессия.
+export function isCurrentSession(credentials: GreenApiCredentials): boolean {
+  return useSessionStore.getState().credentials === credentials;
+}

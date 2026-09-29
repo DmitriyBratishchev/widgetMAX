@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GreenApiError } from '@/api/greenApiClient';
@@ -200,6 +200,27 @@ describe('ChatPage: отправка', () => {
     expect(screen.getByLabelText('Сообщение')).toHaveValue('');
   });
 
+  it('во время отправки поле только для чтения: допечатанное не теряется, после ответа поле пусто и в фокусе', async () => {
+    const send = deferred<{ idMessage: string }>();
+    vi.mocked(sendMessage).mockReturnValue(send.promise);
+    openChat();
+    const user = userEvent.setup();
+    renderWithQueryClient(<ChatPage />);
+    const input = screen.getByLabelText('Сообщение');
+
+    await user.type(input, 'Привет{Enter}');
+    expect(input).toHaveAttribute('readonly');
+
+    await user.type(input, ' ещё');
+    expect(input).toHaveValue('Привет');
+
+    send.resolve({ idMessage: 'BAE5F4886F6F2D05' });
+
+    await waitFor(() => expect(input).not.toHaveAttribute('readonly'));
+    expect(input).toHaveValue('');
+    expect(input).toHaveFocus();
+  });
+
   it('Shift+Enter — перенос строки, а не отправка', async () => {
     openChat();
     const user = userEvent.setup();
@@ -294,5 +315,34 @@ describe('ChatPage: приём', () => {
       'dateTime',
       new Date(1763115112000).toISOString(),
     );
+  });
+
+  it('без ошибок опроса плашки нет', () => {
+    openChat();
+    renderWithQueryClient(<ChatPage />);
+
+    expect(screen.queryByText(/Приём сообщений остановлен/)).not.toBeInTheDocument();
+  });
+
+  it('GREEN-API не принял учётные данные (401) → плашка над лентой', async () => {
+    openChat();
+    vi.mocked(receiveNotification).mockRejectedValueOnce(
+      new GreenApiError('receiveNotification', 'http', 401),
+    );
+    renderWithQueryClient(<ChatPage />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Приём сообщений остановлен: GREEN-API не принял учётные данные. Войдите заново',
+    );
+    expect(receiveNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it('чат не выбран — плашка остановки всё равно видна', async () => {
+    vi.mocked(receiveNotification).mockRejectedValueOnce(
+      new GreenApiError('receiveNotification', 'http', 403),
+    );
+    renderWithQueryClient(<ChatPage />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Приём сообщений остановлен/);
   });
 });

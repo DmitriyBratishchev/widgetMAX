@@ -94,6 +94,11 @@ describe('parseNotification', () => {
       'textMessageData не объект',
       textNotification({ messageData: { typeMessage: 'textMessage', textMessageData: 'x' } }),
     ],
+    // Имена из Object.prototype не должны находиться как направление сообщения.
+    ['typeWebhook toString', textNotification({ typeWebhook: 'toString' })],
+    ['typeWebhook constructor', textNotification({ typeWebhook: 'constructor' })],
+    ['typeWebhook __proto__', textNotification({ typeWebhook: '__proto__' })],
+    ['typeWebhook hasOwnProperty', textNotification({ typeWebhook: 'hasOwnProperty' })],
     ['null', null],
     ['строка', 'incomingMessageReceived'],
     ['массив', []],

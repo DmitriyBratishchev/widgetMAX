@@ -3,11 +3,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GreenApiError } from '@/api/greenApiClient';
-import { AccountNotFoundError } from '@/helpers/chatError';
+import { AccountNotFoundError, SessionEndedError } from '@/helpers/chatError';
 import { useCreateChat } from '@/hooks/useCreateChat';
 import { checkAccount, type sendMessage } from '@/services/chatService';
-import { useChatStore } from '@/stores/chatStore';
+import { CHAT_STORAGE_KEY, useChatStore } from '@/stores/chatStore';
 import { useSessionStore } from '@/stores/sessionStore';
+import { readPersistedState } from '@/test/persistedState';
+import type { CheckAccountResponse } from '@/types/greenApi';
 
 vi.mock('@/services/chatService', () => ({
   checkAccount: vi.fn<typeof checkAccount>(),
@@ -26,6 +28,15 @@ function renderCreateChat() {
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
   return renderHook(() => useCreateChat(), { wrapper });
+}
+
+// То же, что делает useSignOut, и сразу новый вход тем же инстансом — новый объект учётных данных.
+function signOutAndSignInAgain() {
+  act(() => {
+    useChatStore.getState().reset();
+    useSessionStore.getState().signOut();
+    useSessionStore.getState().signIn({ ...credentials });
+  });
 }
 
 beforeEach(() => {
@@ -67,6 +78,27 @@ describe('useCreateChat', () => {
 
     expect(result.current.error).toMatchObject({ status: 469 });
     expect(useChatStore.getState().chats).toEqual([]);
+  });
+
+  it('ответ CheckAccount после «Выйти» и нового входа в стор не пишется и выход не переживает', async () => {
+    let finishCheck!: (response: CheckAccountResponse) => void;
+    vi.mocked(checkAccount).mockReturnValue(
+      new Promise((resolve) => {
+        finishCheck = resolve;
+      }),
+    );
+    const { result } = renderCreateChat();
+
+    act(() => result.current.mutate('79991234567'));
+    await waitFor(() => expect(checkAccount).toHaveBeenCalled());
+    signOutAndSignInAgain();
+    finishCheck({ exist: true, chatId: '10000000' });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    expect(result.current.error).toBeInstanceOf(SessionEndedError);
+    expect(useChatStore.getState().chats).toEqual([]);
+    expect(useChatStore.getState().activeChatId).toBeNull();
+    expect(readPersistedState(CHAT_STORAGE_KEY)).toMatchObject({ chats: [], activeChatId: null });
   });
 
   it('номер уже в списке → CheckAccount не тратится, чат открывается', async () => {

@@ -5,6 +5,10 @@ import type {
   ReceiveNotificationResponse,
 } from '@/types/greenApi';
 
+// Запас сверх long-poll: таймаут транспорта не должен оборвать запрос, который сервер законно
+// держит receiveTimeout секунд.
+const RECEIVE_TIMEOUT_MARGIN_SECONDS = 10;
+
 // Long-poll: GREEN-API держит запрос до receiveTimeout секунд (5–60), пока очередь пуста,
 // и отвечает `null`, если уведомлений так и не появилось.
 export function receiveNotification(
@@ -15,6 +19,8 @@ export function receiveNotification(
   return greenApiRequest<ReceiveNotificationResponse | null>(credentials, 'receiveNotification', {
     query: { receiveTimeout },
     signal,
+    nullable: true,
+    timeoutMs: (receiveTimeout + RECEIVE_TIMEOUT_MARGIN_SECONDS) * 1000,
   });
 }
 

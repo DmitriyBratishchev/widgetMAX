@@ -376,3 +376,88 @@ describe('useNotificationPolling: ошибки', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 });
+
+describe('useNotificationPolling: остановка по ошибке', () => {
+  it.each([401, 403])(
+    '%s от receive → цикл встал, причина credentials-rejected, новых запросов нет',
+    async (status) => {
+      vi.useFakeTimers();
+      vi.mocked(receiveNotification).mockRejectedValueOnce(
+        new GreenApiError('receiveNotification', 'http', status),
+      );
+      const { result } = renderHook(() => useNotificationPolling());
+      await flush();
+
+      expect(result.current).toBe('credentials-rejected');
+
+      await act(() => vi.advanceTimersByTimeAsync(60_000));
+      await flush();
+
+      expect(receiveNotification).toHaveBeenCalledTimes(1);
+      expect(vi.getTimerCount()).toBe(0);
+    },
+  );
+
+  it('401 от delete тоже останавливает цикл', async () => {
+    vi.useFakeTimers();
+    vi.mocked(deleteNotification).mockRejectedValueOnce(
+      new GreenApiError('deleteNotification', 'http', 401),
+    );
+    const { result } = renderHook(() => useNotificationPolling());
+
+    await answer(textNotification(1));
+
+    expect(result.current).toBe('credentials-rejected');
+    await act(() => vi.advanceTimersByTimeAsync(60_000));
+    expect(receiveNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it('500 → как сеть: пауза и повтор, цикл работает', async () => {
+    vi.useFakeTimers();
+    vi.mocked(receiveNotification).mockRejectedValueOnce(
+      new GreenApiError('receiveNotification', 'http', 500),
+    );
+    const { result } = renderHook(() => useNotificationPolling());
+    await flush();
+
+    await act(() => vi.advanceTimersByTimeAsync(1_000));
+    await flush();
+
+    expect(result.current).toBeNull();
+    expect(receiveNotification).toHaveBeenCalledTimes(2);
+  });
+
+  it('ошибка не GREEN-API (баг в коде) → цикл встал, причина unexpected-error, ошибка в консоли', async () => {
+    vi.useFakeTimers();
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const bug = new TypeError('Cannot read properties of undefined');
+    vi.mocked(receiveNotification).mockRejectedValueOnce(bug);
+    const { result } = renderHook(() => useNotificationPolling());
+    await flush();
+
+    expect(result.current).toBe('unexpected-error');
+    expect(consoleError).toHaveBeenCalledWith(bug);
+
+    await act(() => vi.advanceTimersByTimeAsync(60_000));
+    expect(receiveNotification).toHaveBeenCalledTimes(1);
+  });
+
+  it('новый вход после остановки → причина сброшена, цикл снова идёт', async () => {
+    vi.mocked(receiveNotification).mockRejectedValueOnce(
+      new GreenApiError('receiveNotification', 'http', 401),
+    );
+    const { result } = renderHook(() => useNotificationPolling());
+    await flush();
+    expect(result.current).toBe('credentials-rejected');
+
+    act(() => {
+      useSessionStore.getState().signOut();
+      useSessionStore.getState().signIn({ ...credentials });
+    });
+    await flush();
+
+    expect(result.current).toBeNull();
+    expect(receiveNotification).toHaveBeenCalledTimes(2);
+    expect(liveLoops()).toBe(1);
+  });
+});

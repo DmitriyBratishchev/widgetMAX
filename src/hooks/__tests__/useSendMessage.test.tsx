@@ -3,10 +3,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GreenApiError } from '@/api/greenApiClient';
+import { SessionEndedError } from '@/helpers/chatError';
 import { useSendMessage } from '@/hooks/useSendMessage';
 import { type checkAccount, sendMessage } from '@/services/chatService';
-import { useChatStore } from '@/stores/chatStore';
+import { CHAT_STORAGE_KEY, useChatStore } from '@/stores/chatStore';
 import { useSessionStore } from '@/stores/sessionStore';
+import { readPersistedState } from '@/test/persistedState';
+import type { SendMessageResponse } from '@/types/greenApi';
 
 vi.mock('@/services/chatService', () => ({
   checkAccount: vi.fn<typeof checkAccount>(),
@@ -25,6 +28,15 @@ function renderSendMessage() {
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
   return renderHook(() => useSendMessage(), { wrapper });
+}
+
+// То же, что делает useSignOut, и сразу новый вход тем же инстансом — новый объект учётных данных.
+function signOutAndSignInAgain() {
+  act(() => {
+    useChatStore.getState().reset();
+    useSessionStore.getState().signOut();
+    useSessionStore.getState().signIn({ ...credentials });
+  });
 }
 
 beforeEach(() => {
@@ -62,5 +74,25 @@ describe('useSendMessage', () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
 
     expect(useChatStore.getState().messagesByChatId).toEqual({});
+  });
+
+  it('ответ SendMessage после «Выйти» и нового входа в журнал не пишется', async () => {
+    let finishSend!: (response: SendMessageResponse) => void;
+    vi.mocked(sendMessage).mockReturnValue(
+      new Promise((resolve) => {
+        finishSend = resolve;
+      }),
+    );
+    const { result } = renderSendMessage();
+
+    act(() => result.current.mutate({ chatId: '10000000', text: 'Привет' }));
+    await waitFor(() => expect(sendMessage).toHaveBeenCalled());
+    signOutAndSignInAgain();
+    finishSend({ idMessage: 'BAE5F4886F6F2D05' });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    expect(result.current.error).toBeInstanceOf(SessionEndedError);
+    expect(useChatStore.getState().messagesByChatId).toEqual({});
+    expect(readPersistedState(CHAT_STORAGE_KEY)).toMatchObject({ messagesByChatId: {} });
   });
 });
