@@ -1,0 +1,33 @@
+:root {
+  --color-background: var(--palette-gray-50);
+  --color-surface: var(--palette-white);
+  --color-surface-hover: var(--palette-gray-100);
+  --color-border: var(--palette-gray-200);
+
+  --color-text: var(--palette-gray-900);
+  --color-text-secondary: var(--palette-gray-600);
+  --color-text-muted: var(--palette-gray-400);
+  --color-text-on-accent: var(--palette-white);
+
+  --color-accent: var(--palette-blue-500);
+  --color-accent-hover: var(--palette-blue-600);
+  --color-danger: var(--palette-red-500);
+  --color-focus-ring: var(--palette-blue-100);
+
+  --shadow-card: 0 4px 24px var(--palette-shadow);
+
+  // Фон чата — градиент, как у web.max.ru (без фирменного узора).
+  --chat-background: linear-gradient(
+    160deg,
+    var(--palette-blue-300) 0%,
+    var(--palette-cyan-300) 100%
+  );
+  --color-chat-item-active: var(--palette-blue-100);
+  --color-message-incoming: var(--palette-white);
+  --color-message-outgoing: var(--palette-blue-100);
+  --shadow-message: 0 1px 2px var(--palette-shadow);
+  --shadow-composer: 0 2px 12px var(--palette-shadow);
+
+  --color-avatar-background: var(--palette-blue-100);
+  --color-avatar-text: var(--palette-blue-600);
+}

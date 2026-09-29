@@ -1,0 +1,44 @@
+:root {
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --font-family-base:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-md: 15px;
+  --font-size-lg: 17px;
+  --font-size-xl: 22px;
+  // Поле ввода на узком экране: меньше 16px — iOS увеличивает страницу при фокусе.
+  --font-size-input-narrow: 16px;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 600;
+  --line-height-base: 1.4;
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-round: 50%;
+
+  --border-width: 1px;
+  --focus-ring-width: 3px;
+  --opacity-disabled: 0.5;
+  --control-height: 44px;
+  --icon-size: 20px;
+  --avatar-size: 44px;
+  --avatar-size-sm: 36px;
+
+  --layout-sidebar-width: 360px;
+  --layout-login-width: 400px;
+  --layout-header-height: 56px;
+  // Колонка ленты и поля ввода и предельная ширина пузыря — как у web.max.ru.
+  --layout-feed-max-width: 700px;
+  --layout-message-max-width: 488px;
+  --layout-composer-max-height: 160px;
+}
