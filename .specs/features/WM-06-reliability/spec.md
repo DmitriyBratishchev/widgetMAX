@@ -117,7 +117,7 @@
 - [x] **К11.** `parseNotification`: `typeWebhook` `toString`, `constructor`, `__proto__`, `hasOwnProperty` → `null` — `src/helpers/__tests__/notification.test.ts`
 - [x] **К12.** `MessageComposer`: во время отправки поле `readOnly`, набор не меняет значение; после успеха поле пусто и в фокусе; после ошибки текст на месте — `ChatPage.test.tsx`
 - [x] **К13.** `npm run lint`, `npm run format:check`, `npm run build`, `npm run test:run -- --maxWorkers=2` — зелёные (`/finish`, 2026-09-29: lint и format чистые, сборка прошла, 19 файлов / 164 теста)
-- [ ] **К14.** Вживую (Дима): строки 3–5 §8 ресёрча `code-quality` + регресс `.research/max-chat/research.md` §6 — строки 3–5 **проверены Димой 2026-09-29**; регресс `max-chat` §6 (минимум 1, 5, 6, 8, 10, 10f, 10g) — **не проверено**, отметить отдельной правкой после проверки
+- [x] **К14.** Вживую (Дима): строки 3–5 §8 ресёрча `code-quality` + регресс `.research/max-chat/research.md` §6 — строки 3–5 **проверены Димой 2026-09-29** (строка 3 — сменой `apiTokenInstance` в кабинете, плашка появилась); регресс `max-chat` §6 (1, 5, 6, 8, 10, 10f, 10g) — **пройден Димой 2026-09-29** (отмечено после слияния, `chore/wm-06-verified`)
 
 ## Затрагиваемые файлы
 
