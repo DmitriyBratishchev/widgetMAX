@@ -1,3 +1,5 @@
+@use '@/styles/mixins/a11y' as *;
+
 .button {
   display: inline-flex;
   align-items: center;
@@ -8,10 +10,10 @@
   border-radius: var(--radius-sm);
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
-  transition: background-color 0.15s;
+  transition: background-color var(--duration-fast);
 
   &:focus-visible {
-    outline: var(--focus-ring-width) solid var(--color-focus-ring);
+    @include focus-ring;
   }
 
   &:disabled {

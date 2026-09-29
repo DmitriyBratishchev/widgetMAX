@@ -34,7 +34,8 @@ npm run dev
 | `npm run dev`          | dev-сервер Vite                              |
 | `npm run build`        | проверка типов и production-сборка в `dist/` |
 | `npm run preview`      | локальный просмотр собранного `dist/`        |
-| `npm run lint`         | линтер (oxlint)                              |
+| `npm run lint`         | линтер oxlint с проверкой по типам           |
+| `npm run typecheck`    | проверка типов TypeScript                    |
 | `npm run format`       | форматирование Prettier                      |
 | `npm run format:check` | проверка форматирования                      |
 | `npm test`             | тесты в watch-режиме                         |
@@ -94,12 +95,26 @@ src/api/        транспорт GREEN-API: URL {apiUrl}/waInstance{id}/{metho
 src/services/   функция на метод: GetStateInstance, CheckAccount, SendMessage, Receive/DeleteNotification
 src/hooks/      мутации TanStack Query (вход, новый чат, отправка) и цикл опроса уведомлений
 src/stores/     Zustand: сессия и журнал чатов, persist в sessionStorage
+src/helpers/    чистые функции: телефон, тексты ошибок, разбор уведомлений, время, cx()
+src/components/ui/  кит: Button, IconButton, Input, Avatar
 src/pages/      экраны входа и чатов — роутера нет, экран выбирается по признаку входа
-src/styles/     токены (цвета, кегли, отступы) и миксин узкого экрана
+src/styles/     токены (цвета, кегли, отступы, длительности) и миксины: узкий экран, кольцо фокуса,
+                скрытый текст для скринридера, текст ошибки, пустое состояние
 ```
 
 Тесты — Vitest + React Testing Library рядом с кодом (`__tests__/`); сеть в тестах не ходит,
-GREEN-API мокается на уровне `services/`.
+GREEN-API мокается на уровне `services/`. Фейковые учётные данные и рендер с QueryClient — в
+`src/test/`.
+
+## Проверки
+
+Линтер — oxlint с плагинами для TypeScript, React, Vitest, доступности и импортов; правила по
+типам (`oxlint-tsgolint`) ловят устаревшие API (`no-deprecated`), потерянные промисы и
+неполные `switch`. TypeScript — `strict` и `noUncheckedIndexedAccess`. Конфиги —
+[`.oxlintrc.json`](.oxlintrc.json), [`tsconfig.app.json`](tsconfig.app.json).
+
+Workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) на каждый pull request и push в
+`dev`: `npm ci` → `lint` → `format:check` → `typecheck` → `test:run` → `build`.
 
 ## Деплой
 

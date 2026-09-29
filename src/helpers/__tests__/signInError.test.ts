@@ -44,6 +44,8 @@ describe('getSignInErrorMessage', () => {
 
   it('неизвестное состояние и прочие ошибки → общий текст без технических деталей', () => {
     expect(
+      // Намеренно состояние вне типа — как незнакомый ответ сервера.
+      // eslint-disable-next-line typescript/no-unsafe-type-assertion -- см. выше
       getSignInErrorMessage(new InstanceNotAuthorizedError('sleepMode' as StateInstance)),
     ).toContain('sleepMode');
     expect(getSignInErrorMessage(new GreenApiError('getStateInstance', 'http', 500))).toBe(

@@ -1,18 +1,21 @@
-import { useId, type InputHTMLAttributes } from 'react';
+import { useId, type ComponentProps } from 'react';
+import { cx } from '@/helpers/cx';
 import styles from './Input.module.scss';
 
-interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends ComponentProps<'input'> {
   label: string;
   error?: string;
 }
 
+// Поле с подписью и текстом ошибки. className — на корень поля (раскладка снаружи), ref и остальные
+// атрибуты — на сам <input>.
 export function Input({ label, error, id, className, ...props }: InputProps) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const errorId = `${inputId}-error`;
 
   return (
-    <div className={[styles.field, className].filter(Boolean).join(' ')}>
+    <div className={cx(styles.field, className)}>
       <label className={styles.label} htmlFor={inputId}>
         {label}
       </label>

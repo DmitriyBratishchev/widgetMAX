@@ -1,31 +1,29 @@
-import type { ReactNode } from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, renderHook, waitFor } from '@testing-library/react';
+import { act, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GreenApiError } from '@/api/greenApiClient';
 import { useSignIn } from '@/hooks/useSignIn';
 import { InstanceNotAuthorizedError } from '@/helpers/signInError';
 import { getStateInstance } from '@/services/instanceService';
 import { useSessionStore } from '@/stores/sessionStore';
+import { TEST_CREDENTIALS } from '@/test/fixtures';
+import { renderHookWithQueryClient } from '@/test/renderWithQueryClient';
 
-vi.mock('@/services/instanceService', () => ({ getStateInstance: vi.fn() }));
+vi.mock('@/services/instanceService', () => ({
+  getStateInstance: vi.fn<typeof getStateInstance>(),
+}));
 
+// Как из формы: пробелы вокруг idInstance и слэш в конце apiUrl.
 const values = {
-  idInstance: ' 1101000000 ',
-  apiTokenInstance: 'test-token',
-  apiUrl: 'https://1101.api.green-api.com/',
+  ...TEST_CREDENTIALS,
+  idInstance: ` ${TEST_CREDENTIALS.idInstance} `,
+  apiUrl: `${TEST_CREDENTIALS.apiUrl}/`,
 };
 
 function renderSignIn() {
-  const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
-  const wrapper = ({ children }: { children: ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
-  return renderHook(() => useSignIn(), { wrapper });
+  return renderHookWithQueryClient(() => useSignIn());
 }
 
 beforeEach(() => {
-  vi.mocked(getStateInstance).mockReset();
   useSessionStore.getState().signOut();
 });
 
@@ -37,13 +35,8 @@ describe('useSignIn', () => {
     act(() => result.current.mutate(values));
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    const expected = {
-      idInstance: '1101000000',
-      apiTokenInstance: 'test-token',
-      apiUrl: 'https://1101.api.green-api.com',
-    };
-    expect(getStateInstance).toHaveBeenCalledWith(expected);
-    expect(useSessionStore.getState().credentials).toEqual(expected);
+    expect(getStateInstance).toHaveBeenCalledWith(TEST_CREDENTIALS);
+    expect(useSessionStore.getState().credentials).toEqual(TEST_CREDENTIALS);
   });
 
   it('инстанс не авторизован → ошибка в мутации, сессии нет', async () => {

@@ -20,7 +20,7 @@
 
 ## Тесты
 
-- [ ] Точечно: `npx vitest run <файл>`, `npx tsc -p tsconfig.app.json --noEmit`
+- [ ] Точечно: `npx vitest run <файл>`, `npm run typecheck`, `npm run lint`
 - [ ] Полный прогон — **только в `/finish`** (`rules.md` §6):
       `npm run lint` + `npm run format:check` + `npm run build` + `npm run test:run`
 

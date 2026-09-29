@@ -1,11 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { SESSION_STORAGE_KEY, useSessionStore } from '@/stores/sessionStore';
-
-const credentials = {
-  idInstance: '1101000000',
-  apiTokenInstance: 'test-token',
-  apiUrl: 'https://1101.api.green-api.com',
-};
+import { TEST_CREDENTIALS } from '@/test/fixtures';
+import { readPersistedState } from '@/test/persistedState';
 
 beforeEach(() => {
   useSessionStore.getState().signOut();
@@ -14,20 +10,20 @@ beforeEach(() => {
 
 describe('sessionStore', () => {
   it('signIn сохраняет учётные данные в sessionStorage', () => {
-    useSessionStore.getState().signIn(credentials);
+    useSessionStore.getState().signIn(TEST_CREDENTIALS);
 
-    expect(useSessionStore.getState().credentials).toEqual(credentials);
-    expect(JSON.parse(sessionStorage.getItem(SESSION_STORAGE_KEY) ?? '{}').state).toEqual({
-      credentials,
+    expect(useSessionStore.getState().credentials).toEqual(TEST_CREDENTIALS);
+    expect(readPersistedState(SESSION_STORAGE_KEY)).toEqual({
+      credentials: TEST_CREDENTIALS,
     });
   });
 
   it('signOut стирает учётные данные', () => {
-    useSessionStore.getState().signIn(credentials);
+    useSessionStore.getState().signIn(TEST_CREDENTIALS);
     useSessionStore.getState().signOut();
 
     expect(useSessionStore.getState().credentials).toBeNull();
-    expect(JSON.parse(sessionStorage.getItem(SESSION_STORAGE_KEY) ?? '{}').state).toEqual({
+    expect(readPersistedState(SESSION_STORAGE_KEY)).toEqual({
       credentials: null,
     });
   });
@@ -35,11 +31,11 @@ describe('sessionStore', () => {
   it('rehydrate восстанавливает вход из sessionStorage (F5)', async () => {
     sessionStorage.setItem(
       SESSION_STORAGE_KEY,
-      JSON.stringify({ state: { credentials }, version: 0 }),
+      JSON.stringify({ state: { credentials: TEST_CREDENTIALS }, version: 0 }),
     );
 
     await useSessionStore.persist.rehydrate();
 
-    expect(useSessionStore.getState().credentials).toEqual(credentials);
+    expect(useSessionStore.getState().credentials).toEqual(TEST_CREDENTIALS);
   });
 });

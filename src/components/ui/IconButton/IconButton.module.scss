@@ -1,0 +1,47 @@
+@use '@/styles/mixins/a11y' as *;
+
+.button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height);
+  height: var(--control-height);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-round);
+  transition: background-color var(--duration-fast);
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  &:disabled {
+    opacity: var(--opacity-disabled);
+    cursor: default;
+  }
+}
+
+.primary {
+  background: var(--color-accent);
+  color: var(--color-text-on-accent);
+
+  &:hover:not(:disabled) {
+    background: var(--color-accent-hover);
+  }
+}
+
+.ghost {
+  background: transparent;
+  color: var(--color-accent);
+
+  &:hover:not(:disabled) {
+    background: var(--color-surface-hover);
+  }
+}
+
+.icon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  fill: currentColor;
+}

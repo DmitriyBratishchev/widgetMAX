@@ -21,10 +21,10 @@ src/
 ├── types/          ТОЛЬКО wire-типы GREEN-API (контракт API)
 ├── pages/          плоско, <Name>Page/ + локальные подкомпоненты рядом
 ├── components/
-│   ├── ui/         кит: примитивы (Button, Input, Avatar…)
+│   ├── ui/         кит: примитивы (Button, IconButton, Input, Avatar)
 │   └── <домен>/    доменные компоненты: auth, chat
 ├── styles/         index.scss + tokens/ mixins/ base/
-├── test/           setup.ts (jest-dom + cleanup) и общие фикстуры
+├── test/           setup.ts (jest-dom + cleanup), fixtures.ts, рендер с QueryClient
 ├── __tests__/      тест App
 ├── queryClient.ts  единственный QueryClient (мутации без retry)
 ├── main.tsx        точка входа: стили, StrictMode, QueryClientProvider
@@ -46,6 +46,17 @@ src/
 - **только именованные экспорты** (исключение — `export default App`)
 - импорт через `@/`; относительный путь — только на соседний файл и на `.module.scss`
 - `import type` для type-only импортов
+
+### Кит `components/ui/`
+
+- Пропсы — `ComponentProps<'button'>` / `<'input'>` плюс свои: `ref` в React 19 — обычный проп и
+  уходит спредом на элемент. У `Input` `className` — на корень поля (подпись + поле + ошибка),
+  `ref` и остальные атрибуты — на `<input>`.
+- Кнопка без текста — `IconButton`: `label` обязателен (станет `aria-label`), `children` — контуры
+  иконки 24×24. Своих `<button>` со стилями кнопки в страницах не заводим.
+- Классы склеивает `cx()` из `helpers/cx.ts` — не шаблонная строка и не `filter(Boolean).join`.
+- Показать/спрятать компонент кита по раскладке — обёрткой страницы, а не классом на самом
+  компоненте: иначе спор специфичности с базовым классом кита.
 
 ### `pages/`
 
@@ -79,7 +90,12 @@ src/
   состояния мутации, а не `try/catch` в компоненте.
 - **Опрос уведомлений** — отдельный хук с последовательным циклом (не `refetchInterval`):
   порядок `receive → обработать → delete → следующий receive` и остановка по выходу —
-  skill `green-api` §3.
+  skill `green-api` §3. Если цикл встал насовсем (401/403, ошибка в коде), хук **возвращает**
+  причину, а плашку рисует страница: это состояние живого цикла, не данные сессии — в стор его не
+  кладём (WM-06).
+- **Ответ после «Выйти»** в стор не пишем: мутация после `await` в `mutationFn` сверяет
+  `credentials` момента запуска с текущими (`isCurrentSession` из `sessionStore.ts`) и иначе
+  бросает `SessionEndedError` — `onSuccess` не срабатывает (WM-06).
 
 ### Подписка
 
@@ -89,10 +105,16 @@ src/
 
 ## TypeScript
 
-- По ходу работы: **`npx tsc -p tsconfig.app.json --noEmit`**. Голый `tsc --noEmit` в шаблоне
-  Vite проверяет 0 файлов: корневой `tsconfig.json` — solution-style (`"files": []` +
-  `references`), без `-b` компилируется пустое множество с кодом 0.
-- `npm run build` (там `tsc -b`) — только в `/finish`.
+- По ходу работы: **`npm run typecheck`** (`tsc -b` — оба проекта: `src/` и `vite.config.ts`).
+  Голый `tsc --noEmit` в шаблоне Vite проверяет 0 файлов: корневой `tsconfig.json` —
+  solution-style (`"files": []` + `references`), без `-b` компилируется пустое множество с кодом 0.
+- `npm run build` (там тот же `tsc -b`) — только в `/finish`.
+- Флаги сверх `strict`: `noUncheckedIndexedAccess` — индекс массива и записи даёт `T | undefined`.
+  В коде — `?? запасное` или явная проверка, не `!`; в тестах — `assert.isDefined(x)` из `vitest`
+  (сужает тип). Плюс `noImplicitReturns`, `noImplicitOverride`.
+- Линтер по типам (`npm run lint`): устаревшее (`no-deprecated`), `any` из `JSON.parse` и прочего
+  (`no-unsafe-*` — разбирать в `unknown` и сужать), неполный `switch` по союзу без `default`,
+  потерянные промисы. Намеренное нарушение — `// eslint-disable-next-line <правило> -- причина`.
 
 ## Стили
 
@@ -109,6 +131,9 @@ styles/
 - **Литералы цвета, кегля и радиуса — только в `styles/tokens/`**, везде ещё `var()`;
   компоненты видят семантический слой (`var(--color-surface)`), не палитру
 - **`@media` — только в `styles/mixins/breakpoints.scss`**, в компонентах — `@include`
+- Общие миксины: `focus-ring` и `visually-hidden` (`_a11y.scss`), `error-text` и `placeholder` —
+  плашка пустого состояния на градиенте (`_feedback.scss`). Кольцо фокуса и текст ошибки руками не
+  пишем. Длительности переходов — токены (`--duration-fast`)
 - Никаких inline-стилей
 - Обязательные состояния экрана: пусто (нет чатов / нет сообщений), загрузка, ошибка с
   понятным текстом; кнопка отправки недоступна при пустом тексте и во время отправки
@@ -117,8 +142,9 @@ styles/
 
 ```bash
 npx vitest run <файл>                     # по ходу работы — только затронутое
-npx tsc -p tsconfig.app.json --noEmit     # типы, дёшево
-npm run test:run                          # весь набор — ТОЛЬКО в /finish
+npm run typecheck                         # типы, дёшево
+npm run lint                              # oxlint с правилами по типам
+npm run test:run -- --maxWorkers=2        # весь набор — ТОЛЬКО в /finish
 npm run build                             # сборка — ТОЛЬКО в /finish
 ```
 
@@ -128,5 +154,19 @@ npm run build                             # сборка — ТОЛЬКО в /fi
 - компонент с логикой → тест взаимодействий (отправка, валидация формы входа и нового чата)
 
 Сеть не ходит: мокаем функции `services/` (`vi.mock`), а не `fetch` внутри транспорта.
-Учётные данные в тестах — заведомо фейковые (`idInstance: '1101000000'`, `apiTokenInstance:
-'test-token'`), не реальные.
+
+- Мок — с типом: `vi.mock('@/services/chatService', () => ({ sendMessage: vi.fn<typeof sendMessage>() }))`
+  (`vitest/require-mock-type-parameters`); `typeof` импортированной функции — только тип, подъём
+  `vi.mock` не мешает.
+- Моки сбрасывает конфиг (`mockReset: true` в `vite.config.ts`): перед каждым тестом `vi.fn()` —
+  пустая функция, `vi.fn(impl)` — снова `impl`. Ручной `mockReset()` в `beforeEach` не пишем.
+- Без условий внутри `it` (`vitest/no-conditional-in-test`): ветвление — в хелпере модуля.
+  Состояние persist-сторов — `readPersistedState(key)` из `src/test/persistedState.ts`.
+
+Учётные данные в тестах — заведомо фейковые: `TEST_CREDENTIALS` из `src/test/fixtures.ts`
+(`idInstance: '1101000000'`, `apiTokenInstance: 'test-token'`); варианты — спредом от неё.
+Компонент с запросами — `renderWithQueryClient(ui)`, хук с мутацией —
+`renderHookWithQueryClient(() => useХук())` (`src/test/renderWithQueryClient.tsx`, свежий клиент
+без retry). Цикл промисов под фейковыми таймерами прокручивает `vi.advanceTimersByTimeAsync(0)`
+(`useNotificationPolling.test.tsx`, `settle()`), а не серия `await Promise.resolve()`; `vi.waitFor`
+под фейковыми таймерами сам двигает время на `interval` — точные окна пауз он ломает.

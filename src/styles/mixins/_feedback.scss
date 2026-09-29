@@ -1,0 +1,16 @@
+// Сообщения пользователю: тексты ошибок и пустые состояния.
+
+@mixin error-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-danger);
+}
+
+// Пустое состояние на градиенте фона чата — плашка по центру: голый текст там не читается.
+@mixin placeholder {
+  margin: auto;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  text-align: center;
+}

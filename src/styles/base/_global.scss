@@ -1,3 +1,5 @@
+@use '../mixins/a11y' as *;
+
 html,
 body,
 #root {
@@ -12,4 +14,9 @@ body,
 
 body {
   background: var(--color-background);
+}
+
+// Ссылки — с тем же кольцом фокуса, что и контролы, а не с кольцом браузера по умолчанию.
+a:focus-visible {
+  @include focus-ring;
 }

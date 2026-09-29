@@ -87,5 +87,10 @@
 - Роутера нет: `App` выбирает экран (вход / чат) по признаку входа из стора `session`.
 - Деплой — GitHub Pages workflow-ом `.github/workflows/deploy.yml` из `main`; сборка с
   `base: './'` (решение WM-04, ресёрч `max-chat` §5.4). Включение Pages и пуш — только Дима.
-- Линтер — oxlint из шаблона Vite (`--deny-warnings`), форматирование — Prettier; концы строк —
-  LF (`.gitattributes`).
+- Линтер — oxlint (`--deny-warnings`): плагины eslint/typescript/unicorn/react/oxc/import/jsx-a11y/
+  vitest, `correctness` + `suspicious`, правила по типам через `oxlint-tsgolint` (`no-deprecated`
+  и др.). Намеренное нарушение — `// eslint-disable-next-line <правило> -- причина` в месте, лишнее
+  отключение роняет lint. TypeScript — `strict` + `noUncheckedIndexedAccess`, `noImplicitReturns`,
+  `noImplicitOverride`. Форматирование — Prettier, `.editorconfig`; концы строк — LF
+  (`.gitattributes`). CI — `.github/workflows/ci.yml` на PR и push в `dev`. Состав правил и
+  причины — `.specs/features/WM-05-quality-tooling/spec.md` (WM-05).

@@ -1,3 +1,14 @@
+@use '@/styles/mixins/a11y' as *;
+@use '@/styles/mixins/feedback' as *;
+
+// Live-регион ленты: занимает место между шапкой и полем ввода, прокручивается список внутри.
+.feed {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .list {
   display: flex;
   flex: 1;
@@ -30,6 +41,10 @@
   background: var(--color-message-outgoing);
 }
 
+.direction {
+  @include visually-hidden;
+}
+
 .text {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -41,12 +56,6 @@
   color: var(--color-text-muted);
 }
 
-// Пустая лента — плашка по центру: на градиентном фоне голый текст не читается.
 .empty {
-  margin: auto;
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  text-align: center;
+  @include placeholder;
 }
