@@ -1,15 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeCredentials, validateCredentials } from '@/helpers/credentialsValidation';
-
-const valid = {
-  idInstance: '1101000000',
-  apiTokenInstance: 'test-token',
-  apiUrl: 'https://1101.api.green-api.com',
-};
+import { TEST_CREDENTIALS } from '@/test/fixtures';
 
 describe('validateCredentials', () => {
   it('корректные данные → нет ошибок', () => {
-    expect(validateCredentials(valid)).toEqual({});
+    expect(validateCredentials(TEST_CREDENTIALS)).toEqual({});
   });
 
   it('пустые поля → ошибка на каждом', () => {
@@ -19,14 +14,16 @@ describe('validateCredentials', () => {
   });
 
   it('idInstance не из цифр → ошибка', () => {
-    expect(validateCredentials({ ...valid, idInstance: '1101abc' }).idInstance).toBeDefined();
+    expect(
+      validateCredentials({ ...TEST_CREDENTIALS, idInstance: '1101abc' }).idInstance,
+    ).toBeDefined();
   });
 
   it('apiUrl не https → ошибка', () => {
     expect(
-      validateCredentials({ ...valid, apiUrl: 'http://1101.api.green-api.com' }).apiUrl,
+      validateCredentials({ ...TEST_CREDENTIALS, apiUrl: 'http://1101.api.green-api.com' }).apiUrl,
     ).toBeDefined();
-    expect(validateCredentials({ ...valid, apiUrl: 'не адрес' }).apiUrl).toBeDefined();
+    expect(validateCredentials({ ...TEST_CREDENTIALS, apiUrl: 'не адрес' }).apiUrl).toBeDefined();
   });
 });
 
@@ -34,10 +31,10 @@ describe('normalizeCredentials', () => {
   it('обрезает пробелы и слеш в конце apiUrl', () => {
     expect(
       normalizeCredentials({
-        idInstance: ' 1101000000 ',
-        apiTokenInstance: ' test-token ',
-        apiUrl: 'https://1101.api.green-api.com/ ',
+        idInstance: ` ${TEST_CREDENTIALS.idInstance} `,
+        apiTokenInstance: ` ${TEST_CREDENTIALS.apiTokenInstance} `,
+        apiUrl: `${TEST_CREDENTIALS.apiUrl}/ `,
       }),
-    ).toEqual(valid);
+    ).toEqual(TEST_CREDENTIALS);
   });
 });

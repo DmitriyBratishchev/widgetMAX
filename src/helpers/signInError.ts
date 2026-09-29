@@ -1,4 +1,5 @@
 import { GreenApiError } from '@/api/greenApiClient';
+import { RATE_LIMIT_ERROR_TEXT } from '@/helpers/apiErrorText';
 import type { StateInstance } from '@/types/greenApi';
 
 export class InstanceNotAuthorizedError extends Error {
@@ -32,6 +33,7 @@ export function getSignInErrorMessage(error: unknown): string {
   if (error instanceof InstanceNotAuthorizedError) return describeInstanceState(error.state);
 
   if (error instanceof GreenApiError) {
+    // Свой текст, не общий с чатом: apiUrl вводят только здесь, опечатка в нём — тоже «нет связи».
     if (error.kind === 'network') {
       return 'Нет связи с GREEN-API. Проверьте интернет и адрес apiUrl.';
     }
@@ -42,7 +44,7 @@ export function getSignInErrorMessage(error: unknown): string {
       case 404:
         return 'Инстанс не найден по этому apiUrl. Сверьте адрес с личным кабинетом GREEN-API.';
       case 429:
-        return 'Слишком частые запросы. Подождите пару секунд и попробуйте снова.';
+        return RATE_LIMIT_ERROR_TEXT;
       default:
         break;
     }

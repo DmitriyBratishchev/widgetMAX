@@ -21,10 +21,10 @@ src/
 ├── types/          ТОЛЬКО wire-типы GREEN-API (контракт API)
 ├── pages/          плоско, <Name>Page/ + локальные подкомпоненты рядом
 ├── components/
-│   ├── ui/         кит: примитивы (Button, Input, Avatar…)
+│   ├── ui/         кит: примитивы (Button, IconButton, Input, Avatar)
 │   └── <домен>/    доменные компоненты: auth, chat
 ├── styles/         index.scss + tokens/ mixins/ base/
-├── test/           setup.ts (jest-dom + cleanup) и общие фикстуры
+├── test/           setup.ts (jest-dom + cleanup), fixtures.ts, рендер с QueryClient
 ├── __tests__/      тест App
 ├── queryClient.ts  единственный QueryClient (мутации без retry)
 ├── main.tsx        точка входа: стили, StrictMode, QueryClientProvider
@@ -46,6 +46,17 @@ src/
 - **только именованные экспорты** (исключение — `export default App`)
 - импорт через `@/`; относительный путь — только на соседний файл и на `.module.scss`
 - `import type` для type-only импортов
+
+### Кит `components/ui/`
+
+- Пропсы — `ComponentProps<'button'>` / `<'input'>` плюс свои: `ref` в React 19 — обычный проп и
+  уходит спредом на элемент. У `Input` `className` — на корень поля (подпись + поле + ошибка),
+  `ref` и остальные атрибуты — на `<input>`.
+- Кнопка без текста — `IconButton`: `label` обязателен (станет `aria-label`), `children` — контуры
+  иконки 24×24. Своих `<button>` со стилями кнопки в страницах не заводим.
+- Классы склеивает `cx()` из `helpers/cx.ts` — не шаблонная строка и не `filter(Boolean).join`.
+- Показать/спрятать компонент кита по раскладке — обёрткой страницы, а не классом на самом
+  компоненте: иначе спор специфичности с базовым классом кита.
 
 ### `pages/`
 
@@ -120,6 +131,9 @@ styles/
 - **Литералы цвета, кегля и радиуса — только в `styles/tokens/`**, везде ещё `var()`;
   компоненты видят семантический слой (`var(--color-surface)`), не палитру
 - **`@media` — только в `styles/mixins/breakpoints.scss`**, в компонентах — `@include`
+- Общие миксины: `focus-ring` и `visually-hidden` (`_a11y.scss`), `error-text` и `placeholder` —
+  плашка пустого состояния на градиенте (`_feedback.scss`). Кольцо фокуса и текст ошибки руками не
+  пишем. Длительности переходов — токены (`--duration-fast`)
 - Никаких inline-стилей
 - Обязательные состояния экрана: пусто (нет чатов / нет сообщений), загрузка, ошибка с
   понятным текстом; кнопка отправки недоступна при пустом тексте и во время отправки
@@ -149,5 +163,10 @@ npm run build                             # сборка — ТОЛЬКО в /fi
 - Без условий внутри `it` (`vitest/no-conditional-in-test`): ветвление — в хелпере модуля.
   Состояние persist-сторов — `readPersistedState(key)` из `src/test/persistedState.ts`.
 
-Учётные данные в тестах — заведомо фейковые (`idInstance: '1101000000'`, `apiTokenInstance:
-'test-token'`), не реальные.
+Учётные данные в тестах — заведомо фейковые: `TEST_CREDENTIALS` из `src/test/fixtures.ts`
+(`idInstance: '1101000000'`, `apiTokenInstance: 'test-token'`); варианты — спредом от неё.
+Компонент с запросами — `renderWithQueryClient(ui)`, хук с мутацией —
+`renderHookWithQueryClient(() => useХук())` (`src/test/renderWithQueryClient.tsx`, свежий клиент
+без retry). Цикл промисов под фейковыми таймерами прокручивает `vi.advanceTimersByTimeAsync(0)`
+(`useNotificationPolling.test.tsx`, `settle()`), а не серия `await Promise.resolve()`; `vi.waitFor`
+под фейковыми таймерами сам двигает время на `interval` — точные окна пауз он ломает.

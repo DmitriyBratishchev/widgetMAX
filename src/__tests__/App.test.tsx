@@ -7,6 +7,7 @@ import type { getStateInstance } from '@/services/instanceService';
 import type { deleteNotification, receiveNotification } from '@/services/notificationService';
 import { CHAT_STORAGE_KEY, useChatStore } from '@/stores/chatStore';
 import { SESSION_STORAGE_KEY, useSessionStore } from '@/stores/sessionStore';
+import { TEST_CREDENTIALS } from '@/test/fixtures';
 import { readPersistedState } from '@/test/persistedState';
 import { renderWithQueryClient } from '@/test/renderWithQueryClient';
 
@@ -23,12 +24,6 @@ vi.mock('@/services/notificationService', () => ({
   deleteNotification: vi.fn<typeof deleteNotification>(),
 }));
 
-const credentials = {
-  idInstance: '1101000000',
-  apiTokenInstance: 'test-token',
-  apiUrl: 'https://1101.api.green-api.com',
-};
-
 beforeEach(() => {
   useSessionStore.getState().signOut();
   useChatStore.getState().reset();
@@ -43,7 +38,7 @@ describe('App', () => {
   });
 
   it('с сессией показывает экран чата, «Выйти» возвращает на вход и стирает сессию', async () => {
-    useSessionStore.getState().signIn(credentials);
+    useSessionStore.getState().signIn(TEST_CREDENTIALS);
     const user = userEvent.setup();
     renderWithQueryClient(<App />);
 
@@ -58,7 +53,7 @@ describe('App', () => {
   });
 
   it('«Выйти» стирает и чаты: после повторного входа список пуст', async () => {
-    useSessionStore.getState().signIn(credentials);
+    useSessionStore.getState().signIn(TEST_CREDENTIALS);
     useChatStore.getState().addChat({ chatId: '10000000', phone: '79991234567' });
     const user = userEvent.setup();
     renderWithQueryClient(<App />);
@@ -73,7 +68,7 @@ describe('App', () => {
       activeChatId: null,
     });
 
-    act(() => useSessionStore.getState().signIn(credentials));
+    act(() => useSessionStore.getState().signIn(TEST_CREDENTIALS));
 
     expect(screen.getByText(/Чатов пока нет/)).toBeInTheDocument();
   });

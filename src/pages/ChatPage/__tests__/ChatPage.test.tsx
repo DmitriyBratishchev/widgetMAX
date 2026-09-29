@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GreenApiError } from '@/api/greenApiClient';
@@ -7,6 +7,7 @@ import { checkAccount, sendMessage } from '@/services/chatService';
 import { type deleteNotification, receiveNotification } from '@/services/notificationService';
 import { useChatStore } from '@/stores/chatStore';
 import { useSessionStore } from '@/stores/sessionStore';
+import { TEST_CREDENTIALS } from '@/test/fixtures';
 import { renderWithQueryClient } from '@/test/renderWithQueryClient';
 
 vi.mock('@/services/chatService', () => ({
@@ -17,12 +18,6 @@ vi.mock('@/services/notificationService', () => ({
   receiveNotification: vi.fn<typeof receiveNotification>(),
   deleteNotification: vi.fn<typeof deleteNotification>(),
 }));
-
-const credentials = {
-  idInstance: '1101000000',
-  apiTokenInstance: 'test-token',
-  apiUrl: 'https://1101.api.green-api.com',
-};
 
 function openChat() {
   useChatStore.getState().addChat({ chatId: '10000000', phone: '79991234567' });
@@ -41,7 +36,7 @@ beforeEach(() => {
   // Очередь пуста: receive висит, как long-poll. Мгновенный ответ крутил бы цикл без пауз.
   vi.mocked(receiveNotification).mockImplementation(() => new Promise(() => {}));
   useChatStore.getState().reset();
-  useSessionStore.getState().signIn(credentials);
+  useSessionStore.getState().signIn(TEST_CREDENTIALS);
   sessionStorage.clear();
 });
 
@@ -87,6 +82,19 @@ describe('ChatPage: узкий экран', () => {
 });
 
 describe('ChatPage: новый чат', () => {
+  it('пустой номер → «Введите номер телефона», фокус в поле, запрос не уходит', async () => {
+    const user = userEvent.setup();
+    renderWithQueryClient(<ChatPage />);
+
+    await user.click(screen.getByRole('button', { name: 'Создать чат' }));
+
+    const phoneInput = screen.getByLabelText('Номер телефона');
+    expect(phoneInput).toHaveAttribute('aria-invalid', 'true');
+    expect(phoneInput).toHaveAccessibleDescription('Введите номер телефона');
+    expect(phoneInput).toHaveFocus();
+    expect(checkAccount).not.toHaveBeenCalled();
+  });
+
   it('неверный номер → ошибка поля, запрос не уходит', async () => {
     const user = userEvent.setup();
     renderWithQueryClient(<ChatPage />);
@@ -121,7 +129,7 @@ describe('ChatPage: новый чат', () => {
     await user.click(screen.getByRole('button', { name: 'Создать чат' }));
 
     expect(screen.getByRole('button', { name: 'Проверяем номер…' })).toBeDisabled();
-    expect(checkAccount).toHaveBeenCalledWith(credentials, 79991234567);
+    expect(checkAccount).toHaveBeenCalledWith(TEST_CREDENTIALS, 79991234567);
 
     check.resolve({ exist: true, chatId: '10000000' });
 
@@ -187,7 +195,7 @@ describe('ChatPage: отправка', () => {
 
     await user.type(screen.getByLabelText('Сообщение'), 'Привет{Enter}');
 
-    expect(sendMessage).toHaveBeenCalledWith(credentials, {
+    expect(sendMessage).toHaveBeenCalledWith(TEST_CREDENTIALS, {
       chatId: '10000000',
       message: 'Привет',
     });
@@ -230,6 +238,22 @@ describe('ChatPage: отправка', () => {
 
     expect(sendMessage).not.toHaveBeenCalled();
     expect(screen.getByLabelText('Сообщение')).toHaveValue('Строка 1\nСтрока 2');
+  });
+
+  it('Enter во время набора через IME не отправляет — он подтверждает выбор иероглифа', async () => {
+    openChat();
+    const user = userEvent.setup();
+    renderWithQueryClient(<ChatPage />);
+    const input = screen.getByLabelText('Сообщение');
+
+    await user.type(input, 'nihao');
+    // user-event не умеет композицию IME — событие с isComposing собираем сами. Отправляя, обработчик
+    // отменяет Enter (preventDefault); неотменённое событие — Enter не перехвачен.
+    const notCanceled = fireEvent.keyDown(input, { key: 'Enter', isComposing: true });
+
+    expect(notCanceled).toBe(true);
+    expect(sendMessage).not.toHaveBeenCalled();
+    expect(input).toHaveValue('nihao');
   });
 
   it('ошибка отправки → текст в role=alert, набранный текст не потерян', async () => {

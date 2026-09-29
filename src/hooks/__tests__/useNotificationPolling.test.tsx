@@ -2,10 +2,17 @@ import { StrictMode, type ReactNode } from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { GreenApiError } from '@/api/greenApiClient';
-import { useNotificationPolling } from '@/hooks/useNotificationPolling';
+import {
+  EMPTY_QUEUE_PAUSE_MS,
+  MAX_RETRY_DELAY_MS,
+  RECEIVE_TIMEOUT_SECONDS,
+  RETRY_DELAYS_MS,
+  useNotificationPolling,
+} from '@/hooks/useNotificationPolling';
 import { deleteNotification, receiveNotification } from '@/services/notificationService';
 import { useChatStore } from '@/stores/chatStore';
 import { useSessionStore } from '@/stores/sessionStore';
+import { TEST_CREDENTIALS } from '@/test/fixtures';
 import type { ReceiveNotificationResponse } from '@/types/greenApi';
 
 vi.mock('@/services/notificationService', () => ({
@@ -13,11 +20,9 @@ vi.mock('@/services/notificationService', () => ({
   deleteNotification: vi.fn<typeof deleteNotification>(),
 }));
 
-const credentials = {
-  idInstance: '1101000000',
-  apiTokenInstance: 'test-token',
-  apiUrl: 'https://1101.api.green-api.com',
-};
+const [FIRST_RETRY_DELAY_MS, SECOND_RETRY_DELAY_MS] = RETRY_DELAYS_MS;
+// Дольше любой паузы цикла: если цикл жив, за это время он точно сделал бы новый запрос.
+const LONGER_THAN_ANY_PAUSE_MS = MAX_RETRY_DELAY_MS * 2;
 
 interface PendingReceive {
   resolve: (notification: ReceiveNotificationResponse | null) => void;
@@ -75,17 +80,19 @@ function StrictModeWrapper({ children }: { children: ReactNode }) {
   return <StrictMode>{children}</StrictMode>;
 }
 
-// Цикл — цепочка промисов: даём ей пройти несколько шагов.
-async function flush() {
-  await act(async () => {
-    // eslint-disable-next-line eslint/no-await-in-loop -- каждый await — отдельный микротакт
-    for (let i = 0; i < 20; i += 1) await Promise.resolve();
-  });
+// Шаг цикла — цепочка промисов без таймеров. Сдвиг фейкового времени на 0 мс начинается с настоящей
+// макрозадачи: к ней цепочка проходит целиком, а паузы цикла (setTimeout) не срабатывают.
+async function settle() {
+  await act(() => vi.advanceTimersByTimeAsync(0));
+}
+
+async function advance(ms: number) {
+  await act(() => vi.advanceTimersByTimeAsync(ms));
 }
 
 async function answer(notification: ReceiveNotificationResponse | null) {
   lastReceive().resolve(notification);
-  await flush();
+  await settle();
 }
 
 function messages() {
@@ -93,12 +100,13 @@ function messages() {
 }
 
 beforeEach(() => {
+  vi.useFakeTimers();
   receives = [];
   vi.mocked(receiveNotification).mockImplementation(hangingReceive(true));
   vi.mocked(deleteNotification).mockResolvedValue({ result: true });
   useChatStore.getState().reset();
   useChatStore.getState().addChat({ chatId: '10000000', phone: '79991234567' });
-  useSessionStore.getState().signIn(credentials);
+  useSessionStore.getState().signIn(TEST_CREDENTIALS);
   sessionStorage.clear();
 });
 
@@ -119,16 +127,20 @@ describe('useNotificationPolling: порядок', () => {
     renderHook(() => useNotificationPolling());
 
     expect(receiveNotification).toHaveBeenCalledTimes(1);
-    expect(receiveNotification).toHaveBeenCalledWith(credentials, 20, expect.any(AbortSignal));
+    expect(receiveNotification).toHaveBeenCalledWith(
+      TEST_CREDENTIALS,
+      RECEIVE_TIMEOUT_SECONDS,
+      expect.any(AbortSignal),
+    );
 
     await answer(textNotification(1));
 
     expect(messagesAtDelete).toBe(1);
-    expect(deleteNotification).toHaveBeenCalledWith(credentials, 1, expect.any(AbortSignal));
+    expect(deleteNotification).toHaveBeenCalledWith(TEST_CREDENTIALS, 1, expect.any(AbortSignal));
     expect(receiveNotification).toHaveBeenCalledTimes(1);
 
     finishDelete();
-    await flush();
+    await settle();
 
     expect(receiveNotification).toHaveBeenCalledTimes(2);
     const calls = [
@@ -149,27 +161,24 @@ describe('useNotificationPolling: порядок', () => {
     ]);
   });
 
-  it('пустая очередь (null) → без delete, следующий receive через 1 с, а не сразу', async () => {
-    vi.useFakeTimers();
+  it('пустая очередь (null) → без delete, следующий receive через паузу, а не сразу', async () => {
     renderHook(() => useNotificationPolling());
 
     await answer(null);
 
     expect(deleteNotification).not.toHaveBeenCalled();
     expect(receiveNotification).toHaveBeenCalledTimes(1);
-    await act(() => vi.advanceTimersByTimeAsync(999));
+    await advance(EMPTY_QUEUE_PAUSE_MS - 1);
     expect(receiveNotification).toHaveBeenCalledTimes(1);
-    await act(() => vi.advanceTimersByTimeAsync(1));
-    await flush();
+    await advance(1);
     expect(receiveNotification).toHaveBeenCalledTimes(2);
   });
 
-  it('сервер мгновенно отвечает null (как MAX вживую) → не больше запроса в секунду', async () => {
-    vi.useFakeTimers();
+  it('сервер мгновенно отвечает null (как MAX вживую) → не чаще запроса за паузу', async () => {
     vi.mocked(receiveNotification).mockResolvedValue(null);
     renderHook(() => useNotificationPolling());
 
-    await act(() => vi.advanceTimersByTimeAsync(10_000));
+    await advance(10 * EMPTY_QUEUE_PAUSE_MS);
 
     expect(vi.mocked(receiveNotification).mock.calls.length).toBeLessThanOrEqual(11);
   });
@@ -181,7 +190,7 @@ describe('useNotificationPolling: удаление каждого уведомл
 
     await answer(textNotification(1, { chatId: '20000000' }));
 
-    expect(deleteNotification).toHaveBeenCalledWith(credentials, 1, expect.any(AbortSignal));
+    expect(deleteNotification).toHaveBeenCalledWith(TEST_CREDENTIALS, 1, expect.any(AbortSignal));
     expect(useChatStore.getState().messagesByChatId).toEqual({});
     expect(useChatStore.getState().chats.map((c) => c.chatId)).toEqual(['10000000']);
     expect(receiveNotification).toHaveBeenCalledTimes(2);
@@ -226,7 +235,7 @@ describe('useNotificationPolling: исходящие', () => {
     );
 
     expect(messages()).toHaveLength(1);
-    expect(deleteNotification).toHaveBeenCalledWith(credentials, 1, expect.any(AbortSignal));
+    expect(deleteNotification).toHaveBeenCalledWith(TEST_CREDENTIALS, 1, expect.any(AbortSignal));
   });
 
   it('outgoingMessageReceived (с телефона владельца) → исходящее в ленте', async () => {
@@ -246,7 +255,7 @@ describe('useNotificationPolling: остановка', () => {
     const { signal } = lastReceive();
 
     unmount();
-    await flush();
+    await settle();
 
     expect(signal.aborted).toBe(true);
     expect(receiveNotification).toHaveBeenCalledTimes(1);
@@ -257,7 +266,7 @@ describe('useNotificationPolling: остановка', () => {
     const { signal } = lastReceive();
 
     act(() => useSessionStore.getState().signOut());
-    await flush();
+    await settle();
 
     expect(signal.aborted).toBe(true);
     expect(receiveNotification).toHaveBeenCalledTimes(1);
@@ -277,7 +286,7 @@ describe('useNotificationPolling: остановка', () => {
 
   it('в StrictMode активен ровно один цикл', async () => {
     renderHook(() => useNotificationPolling(), { wrapper: StrictModeWrapper });
-    await flush();
+    await settle();
 
     expect(liveLoops()).toBe(1);
 
@@ -291,29 +300,26 @@ describe('useNotificationPolling: остановка', () => {
 
 describe('useNotificationPolling: ошибки', () => {
   it('ошибка receive → пауза с растущим backoff, после успеха пауза сбрасывается', async () => {
-    vi.useFakeTimers();
     vi.mocked(receiveNotification)
       .mockRejectedValueOnce(new GreenApiError('receiveNotification', 'network'))
       .mockRejectedValueOnce(new GreenApiError('receiveNotification', 'http', 429));
     renderHook(() => useNotificationPolling());
-    await flush();
+    await settle();
     expect(receiveNotification).toHaveBeenCalledTimes(1);
 
-    // Первая пауза — 1 с.
-    await act(() => vi.advanceTimersByTimeAsync(999));
+    // Первая пауза.
+    await advance(FIRST_RETRY_DELAY_MS - 1);
     expect(receiveNotification).toHaveBeenCalledTimes(1);
-    await act(() => vi.advanceTimersByTimeAsync(1));
-    await flush();
+    await advance(1);
     expect(receiveNotification).toHaveBeenCalledTimes(2);
 
-    // Вторая подряд — 2 с.
-    await act(() => vi.advanceTimersByTimeAsync(1_999));
+    // Вторая подряд — длиннее.
+    await advance(SECOND_RETRY_DELAY_MS - 1);
     expect(receiveNotification).toHaveBeenCalledTimes(2);
-    await act(() => vi.advanceTimersByTimeAsync(1));
-    await flush();
+    await advance(1);
     expect(receiveNotification).toHaveBeenCalledTimes(3);
 
-    // Успешный шаг сбрасывает счётчик: следующая ошибка — снова 1 с.
+    // Успешный шаг сбрасывает счётчик: следующая ошибка — снова первая пауза.
     await answer(textNotification(1));
     expect(receiveNotification).toHaveBeenCalledTimes(4);
     vi.mocked(receiveNotification).mockRejectedValueOnce(
@@ -321,26 +327,22 @@ describe('useNotificationPolling: ошибки', () => {
     );
     await answer(textNotification(2));
     expect(receiveNotification).toHaveBeenCalledTimes(5);
-    await act(() => vi.advanceTimersByTimeAsync(1_000));
-    await flush();
+    await advance(FIRST_RETRY_DELAY_MS);
     expect(receiveNotification).toHaveBeenCalledTimes(6);
   });
 
   it('delete вернул result: false → пауза перед повтором, а не сразу receive', async () => {
-    vi.useFakeTimers();
     vi.mocked(deleteNotification).mockResolvedValueOnce({ result: false });
     renderHook(() => useNotificationPolling());
 
     await answer(textNotification(1));
     expect(receiveNotification).toHaveBeenCalledTimes(1);
 
-    await act(() => vi.advanceTimersByTimeAsync(1_000));
-    await flush();
+    await advance(FIRST_RETRY_DELAY_MS);
     expect(receiveNotification).toHaveBeenCalledTimes(2);
   });
 
   it('ошибка delete → после паузы то же уведомление без дубля в ленте', async () => {
-    vi.useFakeTimers();
     vi.mocked(deleteNotification).mockRejectedValueOnce(
       new GreenApiError('deleteNotification', 'network'),
     );
@@ -349,8 +351,7 @@ describe('useNotificationPolling: ошибки', () => {
     await answer(textNotification(1));
     expect(receiveNotification).toHaveBeenCalledTimes(1);
 
-    await act(() => vi.advanceTimersByTimeAsync(1_000));
-    await flush();
+    await advance(FIRST_RETRY_DELAY_MS);
     await answer(textNotification(1));
 
     expect(vi.mocked(deleteNotification).mock.calls.map(([, receiptId]) => receiptId)).toEqual([
@@ -361,16 +362,14 @@ describe('useNotificationPolling: ошибки', () => {
   });
 
   it('abort во время паузы останавливает цикл', async () => {
-    vi.useFakeTimers();
     vi.mocked(receiveNotification).mockRejectedValueOnce(
       new GreenApiError('receiveNotification', 'network'),
     );
     const { unmount } = renderHook(() => useNotificationPolling());
-    await flush();
+    await settle();
 
     unmount();
-    await act(() => vi.advanceTimersByTimeAsync(30_000));
-    await flush();
+    await advance(MAX_RETRY_DELAY_MS);
 
     expect(receiveNotification).toHaveBeenCalledTimes(1);
     expect(vi.getTimerCount()).toBe(0);
@@ -381,17 +380,15 @@ describe('useNotificationPolling: остановка по ошибке', () => {
   it.each([401, 403])(
     '%s от receive → цикл встал, причина credentials-rejected, новых запросов нет',
     async (status) => {
-      vi.useFakeTimers();
       vi.mocked(receiveNotification).mockRejectedValueOnce(
         new GreenApiError('receiveNotification', 'http', status),
       );
       const { result } = renderHook(() => useNotificationPolling());
-      await flush();
+      await settle();
 
       expect(result.current).toBe('credentials-rejected');
 
-      await act(() => vi.advanceTimersByTimeAsync(60_000));
-      await flush();
+      await advance(LONGER_THAN_ANY_PAUSE_MS);
 
       expect(receiveNotification).toHaveBeenCalledTimes(1);
       expect(vi.getTimerCount()).toBe(0);
@@ -399,7 +396,6 @@ describe('useNotificationPolling: остановка по ошибке', () => {
   );
 
   it('401 от delete тоже останавливает цикл', async () => {
-    vi.useFakeTimers();
     vi.mocked(deleteNotification).mockRejectedValueOnce(
       new GreenApiError('deleteNotification', 'http', 401),
     );
@@ -408,37 +404,34 @@ describe('useNotificationPolling: остановка по ошибке', () => {
     await answer(textNotification(1));
 
     expect(result.current).toBe('credentials-rejected');
-    await act(() => vi.advanceTimersByTimeAsync(60_000));
+    await advance(LONGER_THAN_ANY_PAUSE_MS);
     expect(receiveNotification).toHaveBeenCalledTimes(1);
   });
 
   it('500 → как сеть: пауза и повтор, цикл работает', async () => {
-    vi.useFakeTimers();
     vi.mocked(receiveNotification).mockRejectedValueOnce(
       new GreenApiError('receiveNotification', 'http', 500),
     );
     const { result } = renderHook(() => useNotificationPolling());
-    await flush();
+    await settle();
 
-    await act(() => vi.advanceTimersByTimeAsync(1_000));
-    await flush();
+    await advance(FIRST_RETRY_DELAY_MS);
 
     expect(result.current).toBeNull();
     expect(receiveNotification).toHaveBeenCalledTimes(2);
   });
 
   it('ошибка не GREEN-API (баг в коде) → цикл встал, причина unexpected-error, ошибка в консоли', async () => {
-    vi.useFakeTimers();
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     const bug = new TypeError('Cannot read properties of undefined');
     vi.mocked(receiveNotification).mockRejectedValueOnce(bug);
     const { result } = renderHook(() => useNotificationPolling());
-    await flush();
+    await settle();
 
     expect(result.current).toBe('unexpected-error');
     expect(consoleError).toHaveBeenCalledWith(bug);
 
-    await act(() => vi.advanceTimersByTimeAsync(60_000));
+    await advance(LONGER_THAN_ANY_PAUSE_MS);
     expect(receiveNotification).toHaveBeenCalledTimes(1);
   });
 
@@ -447,14 +440,14 @@ describe('useNotificationPolling: остановка по ошибке', () => {
       new GreenApiError('receiveNotification', 'http', 401),
     );
     const { result } = renderHook(() => useNotificationPolling());
-    await flush();
+    await settle();
     expect(result.current).toBe('credentials-rejected');
 
     act(() => {
       useSessionStore.getState().signOut();
-      useSessionStore.getState().signIn({ ...credentials });
+      useSessionStore.getState().signIn({ ...TEST_CREDENTIALS });
     });
-    await flush();
+    await settle();
 
     expect(result.current).toBeNull();
     expect(receiveNotification).toHaveBeenCalledTimes(2);

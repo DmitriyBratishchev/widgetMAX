@@ -4,7 +4,7 @@ import { checkAccount } from '@/services/chatService';
 import { useChatStore, type Chat } from '@/stores/chatStore';
 import { isCurrentSession, useSessionStore } from '@/stores/sessionStore';
 
-// Принимает номер, уже нормализованный normalizePhone (11–12 цифр).
+// Принимает номер, уже нормализованный normalizePhone.
 export function useCreateChat() {
   const credentials = useSessionStore((s) => s.credentials);
   const addChat = useChatStore((s) => s.addChat);

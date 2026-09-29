@@ -1,4 +1,5 @@
 @use '@/styles/mixins/breakpoints' as *;
+@use '@/styles/mixins/feedback' as *;
 
 .page {
   display: flex;
@@ -82,34 +83,13 @@
   }
 }
 
+// Обёртка кнопки «Назад»: на узком экране её как будто нет — кнопка стоит прямо в шапке.
 .back {
   display: none;
-  align-items: center;
-  justify-content: center;
-  width: var(--control-height);
-  height: var(--control-height);
-  border: none;
-  border-radius: var(--radius-round);
-  background: transparent;
-  color: var(--color-accent);
-
-  &:hover {
-    background: var(--color-surface-hover);
-  }
-
-  &:focus-visible {
-    outline: var(--focus-ring-width) solid var(--color-focus-ring);
-  }
 
   @include narrow {
-    display: inline-flex;
+    display: contents;
   }
-}
-
-.icon {
-  width: var(--icon-size);
-  height: var(--icon-size);
-  fill: currentColor;
 }
 
 .chatTitle {
@@ -128,16 +108,9 @@
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-md);
   background: var(--color-surface);
-  font-size: var(--font-size-sm);
-  color: var(--color-danger);
+  @include error-text;
 }
 
-// Плашка по центру: на градиентном фоне голый текст не читается.
 .placeholder {
-  margin: auto;
-  padding: var(--space-2) var(--space-4);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  text-align: center;
+  @include placeholder;
 }

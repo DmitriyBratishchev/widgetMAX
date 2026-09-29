@@ -5,6 +5,7 @@ import {
   getCreateChatErrorMessage,
   getSendMessageErrorMessage,
 } from '@/helpers/chatError';
+import { TEST_CREDENTIALS } from '@/test/fixtures';
 
 const httpError = (method: string, status: number) => new GreenApiError(method, 'http', status);
 
@@ -23,7 +24,7 @@ describe('getCreateChatErrorMessage', () => {
     const message = getCreateChatErrorMessage(error);
 
     expect(message).toContain(expected);
-    expect(message).not.toContain('test-token');
+    expect(message).not.toContain(TEST_CREDENTIALS.apiTokenInstance);
   });
 });
 

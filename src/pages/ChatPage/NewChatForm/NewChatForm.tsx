@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom';
 import { Button } from '@/components/ui/Button/Button';
 import { Input } from '@/components/ui/Input/Input';
 import { getCreateChatErrorMessage } from '@/helpers/chatError';
-import { normalizePhone } from '@/helpers/phone';
+import { normalizePhone, PHONE_MAX_DIGITS, PHONE_MIN_DIGITS } from '@/helpers/phone';
 import { useCreateChat } from '@/hooks/useCreateChat';
 import { useChatStore } from '@/stores/chatStore';
 import styles from './NewChatForm.module.scss';
@@ -12,7 +12,7 @@ export function NewChatForm() {
   const createChat = useCreateChat();
   const [phone, setPhone] = useState('');
   const [phoneError, setPhoneError] = useState<string>();
-  const formRef = useRef<HTMLFormElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
   // Номер уже в списке — кнопка честно говорит, что проверки не будет, а чат откроется.
   const isKnownPhone = useChatStore((s) => {
     const normalized = normalizePhone(phone);
@@ -26,10 +26,7 @@ export function NewChatForm() {
     if (createChat.isError) createChat.reset();
   };
 
-  const focusPhone = () => {
-    const input = formRef.current?.elements.namedItem('phone');
-    if (input instanceof HTMLInputElement) input.focus();
-  };
+  const focusPhone = () => phoneRef.current?.focus();
 
   // Ошибка — в DOM до фокуса: скринридер прочтёт поле вместе с aria-invalid и текстом ошибки.
   const showPhoneError = (error: string) => {
@@ -47,7 +44,9 @@ export function NewChatForm() {
     const normalized = normalizePhone(phone);
     if (!normalized) {
       // Неразрывные пробелы: пример номера не разрывается переносом строки.
-      showPhoneError('Номер — 11–12 цифр с кодом страны, например +7\u00a0999\u00a0123-45-67');
+      showPhoneError(
+        `Номер — ${PHONE_MIN_DIGITS}–${PHONE_MAX_DIGITS} цифр с кодом страны, например +7\u00a0999\u00a0123-45-67`,
+      );
       return;
     }
     // Успех открывает чат — фокус заберёт поле сообщения. Отказ объявляет role="alert", а
@@ -56,8 +55,9 @@ export function NewChatForm() {
   };
 
   return (
-    <form ref={formRef} className={styles.form} onSubmit={handleSubmit} noValidate>
+    <form className={styles.form} onSubmit={handleSubmit} noValidate>
       <Input
+        ref={phoneRef}
         label="Номер телефона"
         name="phone"
         type="tel"

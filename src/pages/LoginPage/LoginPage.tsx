@@ -19,11 +19,17 @@ export function LoginPage() {
   const [errors, setErrors] = useState<CredentialsErrors>({});
   // Пока пользователь не правил apiUrl сам, поле следует за idInstance (ресёрч max-chat §3 Р3).
   const [isApiUrlEdited, setIsApiUrlEdited] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
+  const idInstanceRef = useRef<HTMLInputElement>(null);
+  const apiTokenInstanceRef = useRef<HTMLInputElement>(null);
+  const apiUrlRef = useRef<HTMLInputElement>(null);
 
   const focusField = (field: keyof GreenApiCredentials) => {
-    const input = formRef.current?.elements.namedItem(field);
-    if (input instanceof HTMLInputElement) input.focus();
+    const refs = {
+      idInstance: idInstanceRef,
+      apiTokenInstance: apiTokenInstanceRef,
+      apiUrl: apiUrlRef,
+    };
+    refs[field].current?.focus();
   };
 
   const handleChange = (field: keyof GreenApiCredentials) => (e: ChangeEvent<HTMLInputElement>) => {
@@ -35,6 +41,8 @@ export function LoginPage() {
     });
     if (field === 'apiUrl') setIsApiUrlEdited(true);
     setErrors((prev) => ({ ...prev, [field]: undefined }));
+    // Данные поменялись — прошлый отказ GREEN-API к ним уже не относится.
+    if (signIn.isError) signIn.reset();
   };
 
   const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
@@ -54,7 +62,7 @@ export function LoginPage() {
 
   return (
     <main className={styles.page}>
-      <form ref={formRef} className={styles.card} onSubmit={handleSubmit} noValidate>
+      <form className={styles.card} onSubmit={handleSubmit} noValidate>
         <h1 className={styles.title}>widgetMAX</h1>
         <p className={styles.subtitle}>
           Войдите данными инстанса MAX из{' '}
@@ -64,6 +72,7 @@ export function LoginPage() {
         </p>
 
         <Input
+          ref={idInstanceRef}
           label="idInstance"
           name="idInstance"
           inputMode="numeric"
@@ -73,6 +82,7 @@ export function LoginPage() {
           error={errors.idInstance}
         />
         <Input
+          ref={apiTokenInstanceRef}
           label="apiTokenInstance"
           name="apiTokenInstance"
           type="password"
@@ -82,6 +92,7 @@ export function LoginPage() {
           error={errors.apiTokenInstance}
         />
         <Input
+          ref={apiUrlRef}
           label="apiUrl"
           name="apiUrl"
           type="url"

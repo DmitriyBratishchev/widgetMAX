@@ -1,3 +1,5 @@
+@use '@/styles/mixins/feedback' as *;
+
 .form {
   display: flex;
   flex-direction: column;
@@ -7,6 +9,5 @@
 }
 
 .error {
-  font-size: var(--font-size-sm);
-  color: var(--color-danger);
+  @include error-text;
 }

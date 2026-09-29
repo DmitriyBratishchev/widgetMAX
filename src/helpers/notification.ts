@@ -27,7 +27,7 @@ function readText(value: unknown): string | null {
   if (messageData.typeMessage === 'textMessage') {
     text = messageData.textMessageData?.textMessage;
   } else if (messageData.typeMessage === 'extendedTextMessage') {
-    // Путь по аналогии с WhatsApp-версией GREEN-API; для MAX не проверено (ресёрч §2.4).
+    // Путь по аналогии с WhatsApp-версией GREEN-API; для MAX не проверено (ресёрч max-chat §2.4).
     text = messageData.extendedTextMessageData?.text;
   }
   return typeof text === 'string' && text.trim() !== '' ? text : null;

@@ -6,13 +6,11 @@ import {
   type KeyboardEvent,
   type SubmitEvent,
 } from 'react';
-import { Button } from '@/components/ui/Button/Button';
+import { IconButton } from '@/components/ui/IconButton/IconButton';
 import { getSendMessageErrorMessage } from '@/helpers/chatError';
+import { MAX_MESSAGE_LENGTH } from '@/helpers/message';
 import { useSendMessage } from '@/hooks/useSendMessage';
 import styles from './MessageComposer.module.scss';
-
-// Лимит SendMessage: длиннее GREEN-API отвечает 400 (skill green-api §2).
-const MAX_MESSAGE_LENGTH = 4000;
 
 interface MessageComposerProps {
   chatId: string;
@@ -78,17 +76,13 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
           onChange={handleChange}
           onKeyDown={handleKeyDown}
         />
-        {/* Круглая кнопка-иконка, как в web.max.ru; имя для скринридера — в aria-label. */}
-        <Button
+        <IconButton
           type="submit"
-          className={styles.send}
+          label={send.isPending ? 'Отправляем…' : 'Отправить'}
           disabled={!canSend}
-          aria-label={send.isPending ? 'Отправляем…' : 'Отправить'}
         >
-          <svg className={styles.icon} viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12.6 2-12.6 2z" />
-          </svg>
-        </Button>
+          <path d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12.6 2-12.6 2z" />
+        </IconButton>
       </div>
     </form>
   );

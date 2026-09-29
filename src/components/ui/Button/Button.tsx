@@ -1,11 +1,13 @@
-import type { ButtonHTMLAttributes } from 'react';
+import type { ComponentProps } from 'react';
+import { cx } from '@/helpers/cx';
 import styles from './Button.module.scss';
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends ComponentProps<'button'> {
   variant?: 'primary' | 'secondary';
 }
 
 export function Button({ variant = 'primary', type = 'button', className, ...props }: ButtonProps) {
-  const classNames = [styles.button, styles[variant], className].filter(Boolean).join(' ');
-  return <button type={type} className={classNames} {...props} />;
+  return (
+    <button type={type} className={cx(styles.button, styles[variant], className)} {...props} />
+  );
 }

@@ -1,3 +1,5 @@
+@use '@/styles/mixins/a11y' as *;
+
 .list {
   flex: 1;
   overflow-y: auto;
@@ -20,7 +22,7 @@
   }
 
   &:focus-visible {
-    outline: var(--focus-ring-width) solid var(--color-focus-ring);
+    @include focus-ring;
   }
 }
 

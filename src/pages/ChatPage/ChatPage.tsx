@@ -1,6 +1,7 @@
 import { Fragment } from 'react';
 import { Avatar } from '@/components/ui/Avatar/Avatar';
 import { Button } from '@/components/ui/Button/Button';
+import { IconButton } from '@/components/ui/IconButton/IconButton';
 import { formatPhone, getPhoneAvatarLabel } from '@/helpers/phone';
 import { useNotificationPolling, type PollingStopReason } from '@/hooks/useNotificationPolling';
 import { useSignOut } from '@/hooks/useSignOut';
@@ -52,17 +53,13 @@ export function ChatPage() {
       <main className={styles.chat}>
         {activeChat && (
           <header className={styles.chatHeader}>
-            {/* Видна только на узком экране: на широком список и так рядом. */}
-            <button
-              type="button"
-              className={styles.back}
-              aria-label="Назад к списку чатов"
-              onClick={closeChat}
-            >
-              <svg className={styles.icon} viewBox="0 0 24 24" aria-hidden="true">
+            {/* Видна только на узком экране: на широком список и так рядом. Прячет обёртка —
+                класс на самой кнопке спорил бы специфичностью с базовым классом кита. */}
+            <span className={styles.back}>
+              <IconButton variant="ghost" label="Назад к списку чатов" onClick={closeChat}>
                 <path d="M15.4 5.4 14 4l-8 8 8 8 1.4-1.4L8.8 12z" />
-              </svg>
-            </button>
+              </IconButton>
+            </span>
             <Avatar size="sm" label={getPhoneAvatarLabel(activeChat.phone)} />
             <h2 className={styles.chatTitle}>{formatPhone(activeChat.phone)}</h2>
           </header>
