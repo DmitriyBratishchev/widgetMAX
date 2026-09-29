@@ -13,11 +13,14 @@
   --font-size-md: 15px;
   --font-size-lg: 17px;
   --font-size-xl: 22px;
+  // Поле ввода на узком экране: меньше 16px — iOS увеличивает страницу при фокусе.
+  --font-size-input-narrow: 16px;
   --font-weight-regular: 400;
   --font-weight-medium: 500;
   --font-weight-bold: 600;
   --line-height-base: 1.4;
 
+  --radius-xs: 4px;
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 18px;
@@ -27,10 +30,15 @@
   --focus-ring-width: 3px;
   --opacity-disabled: 0.5;
   --control-height: 44px;
+  --icon-size: 20px;
+  --avatar-size: 44px;
+  --avatar-size-sm: 36px;
 
   --layout-sidebar-width: 360px;
   --layout-login-width: 400px;
   --layout-header-height: 56px;
-  --layout-message-max-width: 560px;
+  // Колонка ленты и поля ввода и предельная ширина пузыря — как у web.max.ru.
+  --layout-feed-max-width: 700px;
+  --layout-message-max-width: 488px;
   --layout-composer-max-height: 160px;
 }

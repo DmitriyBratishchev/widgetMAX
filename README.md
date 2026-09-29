@@ -6,6 +6,11 @@
 Тестовое задание «Фронтенд-разработчик React». Бэкенда нет: приложение обращается к GREEN-API
 напрямую из браузера.
 
+**Демо:** https://dmitriybratishchev.github.io/widgetMAX/ — войти можно данными своего инстанса
+GREEN-API (см. [«Что нужно от GREEN-API»](#что-нужно-от-green-api)).
+
+![Экран чатов](docs/screenshots/chat-wide.png)
+
 ## Стек
 
 React 19, TypeScript, Vite, TanStack Query, Zustand, SCSS-модули, Vitest + React Testing Library,
@@ -66,6 +71,43 @@ npm run dev
 4. Ответ собеседника из MAX появится в чате сам, без перезагрузки: пока открыт экран чатов,
    приложение опрашивает очередь уведомлений инстанса (`ReceiveNotification` → `DeleteNotification`).
    Показываются только текстовые сообщения чатов из списка; остальные события удаляются из очереди.
+   Чат с новым сообщением поднимается в начало списка.
+
+На телефоне и в узком окне (до 768 px) виден либо список чатов, либо открытый чат; кнопка «←» в
+шапке чата возвращает к списку.
 
 Чаты и сообщения живут в `sessionStorage` вкладки: переживают перезагрузку страницы и стираются
 при выходе или закрытии вкладки. На тарифе Developer — до 3 чатов и 100 проверок номеров.
+
+## Скриншоты
+
+Данные на скриншотах вымышленные.
+
+| Вход                                | Список на телефоне                                                | Чат на телефоне                                          |
+| ----------------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------- |
+| ![Вход](docs/screenshots/login.png) | ![Список чатов на узком экране](docs/screenshots/narrow-list.png) | ![Чат на узком экране](docs/screenshots/narrow-chat.png) |
+
+## Устройство
+
+```
+src/api/        транспорт GREEN-API: URL {apiUrl}/waInstance{id}/{method}/{token}, ошибка по коду статуса
+src/services/   функция на метод: GetStateInstance, CheckAccount, SendMessage, Receive/DeleteNotification
+src/hooks/      мутации TanStack Query (вход, новый чат, отправка) и цикл опроса уведомлений
+src/stores/     Zustand: сессия и журнал чатов, persist в sessionStorage
+src/pages/      экраны входа и чатов — роутера нет, экран выбирается по признаку входа
+src/styles/     токены (цвета, кегли, отступы) и миксин узкого экрана
+```
+
+Тесты — Vitest + React Testing Library рядом с кодом (`__tests__/`); сеть в тестах не ходит,
+GREEN-API мокается на уровне `services/`.
+
+## Деплой
+
+Сайт публикуется на GitHub Pages workflow-ом [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)
+при каждом push в `main` (или вручную — Actions → «Deploy to GitHub Pages» → Run workflow):
+`npm ci` → тесты → `npm run build` → публикация `dist/`. Сборка использует относительные пути
+(`base: './'` в `vite.config.ts`), поэтому работает и в подкаталоге `/widgetMAX/`, и в корне
+любого статического хостинга. Секретов в сборке нет.
+
+Однократная настройка репозитория: Settings → Pages → Build and deployment → Source: **GitHub
+Actions**.
