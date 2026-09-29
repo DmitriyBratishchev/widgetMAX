@@ -1,0 +1,6 @@
+dist
+coverage
+package-lock.json
+draftHelper
+.claude
+.docs

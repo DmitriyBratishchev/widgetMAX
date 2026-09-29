@@ -1,0 +1,4 @@
+# LF в рабочей копии на любой ОС: Prettier проверяет endOfLine=lf,
+# а core.autocrlf=true на Windows иначе выдал бы CRLF и уронил format:check.
+* text=auto eol=lf
+*.png binary
