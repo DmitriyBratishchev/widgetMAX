@@ -7,7 +7,9 @@ import { getStateInstance } from '@/services/instanceService';
 import { useSessionStore } from '@/stores/sessionStore';
 import { renderWithQueryClient } from '@/test/renderWithQueryClient';
 
-vi.mock('@/services/instanceService', () => ({ getStateInstance: vi.fn() }));
+vi.mock('@/services/instanceService', () => ({
+  getStateInstance: vi.fn<typeof getStateInstance>(),
+}));
 
 function getFields() {
   return {
@@ -19,7 +21,6 @@ function getFields() {
 }
 
 beforeEach(() => {
-  vi.mocked(getStateInstance).mockReset();
   useSessionStore.getState().signOut();
   sessionStorage.clear();
 });
@@ -59,7 +60,7 @@ describe('LoginPage', () => {
   });
 
   it('во время запроса кнопка недоступна, после authorized — вход выполнен', async () => {
-    let resolveState: (value: { stateInstance: 'authorized' }) => void = () => {};
+    let resolveState!: (value: { stateInstance: 'authorized' }) => void;
     vi.mocked(getStateInstance).mockReturnValue(
       new Promise((resolve) => {
         resolveState = resolve;

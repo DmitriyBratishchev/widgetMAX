@@ -8,7 +8,9 @@ import { InstanceNotAuthorizedError } from '@/helpers/signInError';
 import { getStateInstance } from '@/services/instanceService';
 import { useSessionStore } from '@/stores/sessionStore';
 
-vi.mock('@/services/instanceService', () => ({ getStateInstance: vi.fn() }));
+vi.mock('@/services/instanceService', () => ({
+  getStateInstance: vi.fn<typeof getStateInstance>(),
+}));
 
 const values = {
   idInstance: ' 1101000000 ',
@@ -25,7 +27,6 @@ function renderSignIn() {
 }
 
 beforeEach(() => {
-  vi.mocked(getStateInstance).mockReset();
   useSessionStore.getState().signOut();
 });
 

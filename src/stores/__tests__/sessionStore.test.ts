@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { SESSION_STORAGE_KEY, useSessionStore } from '@/stores/sessionStore';
+import { readPersistedState } from '@/test/persistedState';
 
 const credentials = {
   idInstance: '1101000000',
@@ -17,7 +18,7 @@ describe('sessionStore', () => {
     useSessionStore.getState().signIn(credentials);
 
     expect(useSessionStore.getState().credentials).toEqual(credentials);
-    expect(JSON.parse(sessionStorage.getItem(SESSION_STORAGE_KEY) ?? '{}').state).toEqual({
+    expect(readPersistedState(SESSION_STORAGE_KEY)).toEqual({
       credentials,
     });
   });
@@ -27,7 +28,7 @@ describe('sessionStore', () => {
     useSessionStore.getState().signOut();
 
     expect(useSessionStore.getState().credentials).toBeNull();
-    expect(JSON.parse(sessionStorage.getItem(SESSION_STORAGE_KEY) ?? '{}').state).toEqual({
+    expect(readPersistedState(SESSION_STORAGE_KEY)).toEqual({
       credentials: null,
     });
   });

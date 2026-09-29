@@ -2,16 +2,25 @@ import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '@/App';
+import type { checkAccount, sendMessage } from '@/services/chatService';
+import type { getStateInstance } from '@/services/instanceService';
+import type { deleteNotification, receiveNotification } from '@/services/notificationService';
 import { CHAT_STORAGE_KEY, useChatStore } from '@/stores/chatStore';
 import { SESSION_STORAGE_KEY, useSessionStore } from '@/stores/sessionStore';
+import { readPersistedState } from '@/test/persistedState';
 import { renderWithQueryClient } from '@/test/renderWithQueryClient';
 
-vi.mock('@/services/instanceService', () => ({ getStateInstance: vi.fn() }));
-vi.mock('@/services/chatService', () => ({ checkAccount: vi.fn(), sendMessage: vi.fn() }));
+vi.mock('@/services/instanceService', () => ({
+  getStateInstance: vi.fn<typeof getStateInstance>(),
+}));
+vi.mock('@/services/chatService', () => ({
+  checkAccount: vi.fn<typeof checkAccount>(),
+  sendMessage: vi.fn<typeof sendMessage>(),
+}));
 // Очередь пуста: receive висит, как long-poll, — экран чатов не уходит в сеть и не крутит цикл.
 vi.mock('@/services/notificationService', () => ({
-  receiveNotification: vi.fn(() => new Promise(() => {})),
-  deleteNotification: vi.fn(),
+  receiveNotification: vi.fn<typeof receiveNotification>(() => new Promise(() => {})),
+  deleteNotification: vi.fn<typeof deleteNotification>(),
 }));
 
 const credentials = {
@@ -43,7 +52,7 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: 'Выйти' }));
 
     expect(screen.getByRole('button', { name: 'Войти' })).toBeInTheDocument();
-    expect(JSON.parse(sessionStorage.getItem(SESSION_STORAGE_KEY) ?? '{}').state).toEqual({
+    expect(readPersistedState(SESSION_STORAGE_KEY)).toEqual({
       credentials: null,
     });
   });
@@ -58,7 +67,7 @@ describe('App', () => {
 
     await user.click(screen.getByRole('button', { name: 'Выйти' }));
 
-    expect(JSON.parse(sessionStorage.getItem(CHAT_STORAGE_KEY) ?? '{}').state).toEqual({
+    expect(readPersistedState(CHAT_STORAGE_KEY)).toEqual({
       chats: [],
       messagesByChatId: {},
       activeChatId: null,

@@ -1,12 +1,18 @@
 {
   "name": "widgetmax",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "Веб-чат для отправки и получения текстовых сообщений в мессенджере MAX через GREEN-API",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DmitriyBratishchev/widgetMAX.git"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint --deny-warnings",
+    "typecheck": "tsc -b",
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
@@ -30,6 +36,7 @@
     "@vitejs/plugin-react": "^6.1.1",
     "jsdom": "^29.1.1",
     "oxlint": "^1.81.0",
+    "oxlint-tsgolint": "^7.0.2003",
     "prettier": "^3.9.9",
     "sass-embedded": "^1.105.0",
     "typescript": "~6.0.2",

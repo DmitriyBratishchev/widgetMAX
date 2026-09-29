@@ -1,18 +1,14 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { greenApiRequest } from '@/api/greenApiClient';
 import { deleteNotification, receiveNotification } from '@/services/notificationService';
 
-vi.mock('@/api/greenApiClient', () => ({ greenApiRequest: vi.fn() }));
+vi.mock('@/api/greenApiClient', () => ({ greenApiRequest: vi.fn<typeof greenApiRequest>() }));
 
 const credentials = {
   idInstance: '1101000000',
   apiTokenInstance: 'test-token',
   apiUrl: 'https://1101.api.green-api.com',
 };
-
-beforeEach(() => {
-  vi.mocked(greenApiRequest).mockReset();
-});
 
 describe('notificationService', () => {
   it('receiveNotification шлёт GET receiveNotification с receiveTimeout в query и signal', async () => {

@@ -15,7 +15,7 @@ describe('validateCredentials', () => {
   it('пустые поля → ошибка на каждом', () => {
     const errors = validateCredentials({ idInstance: ' ', apiTokenInstance: '', apiUrl: '' });
 
-    expect(Object.keys(errors).sort()).toEqual(['apiTokenInstance', 'apiUrl', 'idInstance']);
+    expect(Object.keys(errors).toSorted()).toEqual(['apiTokenInstance', 'apiUrl', 'idInstance']);
   });
 
   it('idInstance не из цифр → ошибка', () => {

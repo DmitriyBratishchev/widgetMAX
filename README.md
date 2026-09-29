@@ -34,7 +34,8 @@ npm run dev
 | `npm run dev`          | dev-сервер Vite                              |
 | `npm run build`        | проверка типов и production-сборка в `dist/` |
 | `npm run preview`      | локальный просмотр собранного `dist/`        |
-| `npm run lint`         | линтер (oxlint)                              |
+| `npm run lint`         | линтер oxlint с проверкой по типам           |
+| `npm run typecheck`    | проверка типов TypeScript                    |
 | `npm run format`       | форматирование Prettier                      |
 | `npm run format:check` | проверка форматирования                      |
 | `npm test`             | тесты в watch-режиме                         |
@@ -100,6 +101,16 @@ src/styles/     токены (цвета, кегли, отступы) и мик�
 
 Тесты — Vitest + React Testing Library рядом с кодом (`__tests__/`); сеть в тестах не ходит,
 GREEN-API мокается на уровне `services/`.
+
+## Проверки
+
+Линтер — oxlint с плагинами для TypeScript, React, Vitest, доступности и импортов; правила по
+типам (`oxlint-tsgolint`) ловят устаревшие API (`no-deprecated`), потерянные промисы и
+неполные `switch`. TypeScript — `strict` и `noUncheckedIndexedAccess`. Конфиги —
+[`.oxlintrc.json`](.oxlintrc.json), [`tsconfig.app.json`](tsconfig.app.json).
+
+Workflow [`.github/workflows/ci.yml`](.github/workflows/ci.yml) на каждый pull request и push в
+`dev`: `npm ci` → `lint` → `format:check` → `typecheck` → `test:run` → `build`.
 
 ## Деплой
 

@@ -19,6 +19,8 @@ export function MessageList({ chatId }: MessageListProps) {
   useEffect(() => {
     const list = listRef.current;
     if (list) list.scrollTop = list.scrollHeight;
+    // messages — триггер прокрутки, а не читаемое в эффекте значение.
+    // eslint-disable-next-line react/exhaustive-effect-dependencies -- см. выше
   }, [messages]);
 
   if (messages.length === 0) {
