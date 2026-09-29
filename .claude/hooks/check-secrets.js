@@ -1,5 +1,5 @@
 // PostToolUse (Edit|Write): ищет захардкоженные секреты в только что изменённом файле.
-// Главный секрет проекта — apiTokenInstance GREEN-API (rules.md §6).
+// Главный секрет проекта — apiTokenInstance GREEN-API (rules.md §7).
 // Exit 2 — фидбек модели: секрет нужно убрать немедленно.
 const fs = require('fs');
 const { changedLines } = require('./lib/changed-lines');

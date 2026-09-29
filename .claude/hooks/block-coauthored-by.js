@@ -1,4 +1,4 @@
-// PreToolUse (Bash): в коммитах проекта запрещён трейлер Co-Authored-By (rules.md §4).
+// PreToolUse (Bash): в коммитах проекта запрещён трейлер Co-Authored-By (rules.md §5).
 // Дефолт харнесса — добавлять его; хук снимает конфликт детерминированно.
 // Exit 2 — коммит блокируется, сообщение уходит модели.
 const fs = require('fs');
@@ -24,7 +24,7 @@ if (!found) {
 
 if (found) {
   process.stderr.write(
-    'BLOCKED: трейлер Co-Authored-By запрещён в коммитах этого проекта (rules.md §4).\n' +
+    'BLOCKED: трейлер Co-Authored-By запрещён в коммитах этого проекта (rules.md §5).\n' +
     'Убери строку Co-Authored-By из сообщения коммита и повтори.\n'
   );
   process.exit(2);

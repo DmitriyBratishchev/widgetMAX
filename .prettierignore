@@ -4,3 +4,5 @@ package-lock.json
 draftHelper
 .claude
 .docs
+.research
+.specs

@@ -1,6 +1,6 @@
 // PreToolUse (Bash): перед git commit проверяет staged .ts/.tsx/.js/.jsx на console.log.
 // Exit 2 — блокирует коммит, сообщение уходит модели для исправления.
-// Допустимо только обёрнутое в import.meta.env.DEV (rules.md §6).
+// Допустимо только обёрнутое в import.meta.env.DEV (rules.md §7).
 const fs = require('fs');
 const { execSync } = require('child_process');
 
