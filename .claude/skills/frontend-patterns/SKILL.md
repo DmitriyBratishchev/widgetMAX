@@ -24,7 +24,11 @@ src/
 │   ├── ui/         кит: примитивы (Button, Input, Avatar…)
 │   └── <домен>/    доменные компоненты: auth, chat
 ├── styles/         index.scss + tokens/ mixins/ base/
-└── test/           setup и общие фикстуры
+├── test/           setup.ts (jest-dom + cleanup) и общие фикстуры
+├── __tests__/      тест App
+├── queryClient.ts  единственный QueryClient (мутации без retry)
+├── main.tsx        точка входа: стили, StrictMode, QueryClientProvider
+└── App.tsx         выбор экрана (вход / чат) — без роутера, по признаку входа из стора
 ```
 
 - `api/` — **один** клиент GREEN-API; второго транспорта не заводим

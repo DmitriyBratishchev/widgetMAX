@@ -1,0 +1,7 @@
+// Единственная точка входа стилей — её импортирует main.tsx.
+@use 'tokens/palette';
+@use 'tokens/semantic';
+@use 'tokens/scale';
+@use 'base/reset';
+@use 'base/typography';
+@use 'base/global';

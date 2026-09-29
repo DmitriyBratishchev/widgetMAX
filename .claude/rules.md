@@ -85,9 +85,10 @@ chore(claude): обновить правила проекта
 1. Тесты для нового/изменённого функционала — вместе с кодом, не потом.
 2. **По ходу работы — только точечно**: `npx vitest run <файл>`,
    `npx tsc -p tsconfig.app.json --noEmit`.
-3. **Полный прогон — один раз, в `/finish`**: `npm run lint` + `npm run build` +
-   `npm run test:run`. Ни одна проверка не заменяет другую: `build` несёт свой `tsc -b`,
-   `lint` ловит правила React Hooks и `react-refresh`, которых не видят ни типы, ни тесты.
+3. **Полный прогон — один раз, в `/finish`**: `npm run lint` + `npm run format:check` +
+   `npm run build` + `npm run test:run`. Ни одна проверка не заменяет другую: `build` несёт
+   свой `tsc -b`, `lint` (oxlint, `--deny-warnings`) ловит правила React Hooks и
+   `only-export-components`, которых не видят ни типы, ни тесты; `format:check` — Prettier.
 4. Сеть в тестах не ходит: GREEN-API мокается на уровне `services/`.
 
 ---

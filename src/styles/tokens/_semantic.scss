@@ -1,0 +1,18 @@
+:root {
+  --color-background: var(--palette-gray-50);
+  --color-surface: var(--palette-white);
+  --color-surface-hover: var(--palette-gray-100);
+  --color-border: var(--palette-gray-200);
+
+  --color-text: var(--palette-gray-900);
+  --color-text-secondary: var(--palette-gray-600);
+  --color-text-muted: var(--palette-gray-400);
+  --color-text-on-accent: var(--palette-white);
+
+  --color-accent: var(--palette-blue-500);
+  --color-accent-hover: var(--palette-blue-600);
+  --color-danger: var(--palette-red-500);
+
+  --color-message-incoming: var(--palette-white);
+  --color-message-outgoing: var(--palette-blue-100);
+}

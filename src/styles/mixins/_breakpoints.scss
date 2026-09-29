@@ -1,0 +1,8 @@
+// Единственное место с @media: компоненты подключают миксины через @include.
+$breakpoint-narrow: 768px;
+
+@mixin narrow {
+  @media (max-width: $breakpoint-narrow) {
+    @content;
+  }
+}

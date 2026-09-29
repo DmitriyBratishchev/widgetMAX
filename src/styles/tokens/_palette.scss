@@ -1,0 +1,15 @@
+// Палитра — единственное место с литералами цветов. Компоненты её не видят:
+// они работают с семантическим слоем (_semantic.scss).
+:root {
+  --palette-white: #ffffff;
+  --palette-gray-50: #f5f6f8;
+  --palette-gray-100: #eceef2;
+  --palette-gray-200: #dfe2e8;
+  --palette-gray-400: #9aa1ad;
+  --palette-gray-600: #626a78;
+  --palette-gray-900: #1c1f24;
+  --palette-blue-100: #e3ecff;
+  --palette-blue-500: #2e6bff;
+  --palette-blue-600: #1f58e0;
+  --palette-red-500: #e5484d;
+}
