@@ -12,6 +12,9 @@
   --color-accent: var(--palette-blue-500);
   --color-accent-hover: var(--palette-blue-600);
   --color-danger: var(--palette-red-500);
+  --color-focus-ring: var(--palette-blue-100);
+
+  --shadow-card: 0 4px 24px var(--palette-shadow);
 
   --color-message-incoming: var(--palette-white);
   --color-message-outgoing: var(--palette-blue-100);
