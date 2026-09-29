@@ -1,0 +1,26 @@
+# Черновые материалы Димы (скриншоты задания и т.п.) — не для репозитория
+/draftHelper/
+
+# Environment
+.env
+.env.*.local
+
+# Dependencies / build
+node_modules/
+dist/
+coverage/
+
+# Logs
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Claude Code (локальные permissions, индивидуально на машине)
+.claude/settings.local.json
+
+# OS
+Thumbs.db
+.DS_Store
