@@ -1,5 +1,5 @@
 // PostToolUse (Edit|Write): хардкод-цвета в .tsx/.ts/.scss/.css вне styles/tokens/
-// (rules.md §7, золотое правило №4). Exit 2 — фидбек модели: использовать CSS Custom Properties.
+// (rules.md §8, золотое правило №4). Exit 2 — фидбек модели: использовать CSS Custom Properties.
 const fs = require('fs');
 const { changedLines } = require('./lib/changed-lines');
 
