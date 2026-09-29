@@ -47,6 +47,29 @@ describe('chatStore', () => {
     expect(useChatStore.getState().messagesByChatId['10000000']).toHaveLength(2);
   });
 
+  it('новое сообщение поднимает свой чат в начало списка, дубль порядок не меняет', () => {
+    const other = { chatId: '20000000', phone: '79990000000' };
+    useChatStore.getState().addChat(chat);
+    useChatStore.getState().addChat(other);
+    useChatStore.getState().addMessage(message);
+
+    expect(useChatStore.getState().chats).toEqual([chat, other]);
+
+    useChatStore.getState().addMessage({ ...message, chatId: '20000000' });
+    expect(useChatStore.getState().chats).toEqual([other, chat]);
+
+    useChatStore.getState().addMessage(message);
+    expect(useChatStore.getState().chats).toEqual([other, chat]);
+  });
+
+  it('closeChat закрывает чат, список не трогает', () => {
+    useChatStore.getState().addChat(chat);
+    useChatStore.getState().closeChat();
+
+    expect(useChatStore.getState().activeChatId).toBeNull();
+    expect(useChatStore.getState().chats).toEqual([chat]);
+  });
+
   it('состояние пишется в sessionStorage, reset его стирает', () => {
     useChatStore.getState().addChat(chat);
     useChatStore.getState().addMessage(message);

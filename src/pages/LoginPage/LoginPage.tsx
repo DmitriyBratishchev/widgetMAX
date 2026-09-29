@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type SubmitEvent } from 'react';
 import { Button } from '@/components/ui/Button/Button';
 import { Input } from '@/components/ui/Input/Input';
 import { suggestApiUrl } from '@/helpers/apiUrl';
@@ -28,7 +28,7 @@ export function LoginPage() {
     setErrors((prev) => ({ ...prev, [field]: undefined }));
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     const validationErrors = validateCredentials(values);
     setErrors(validationErrors);

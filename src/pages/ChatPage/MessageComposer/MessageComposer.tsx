@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react';
+import { useState, type ChangeEvent, type KeyboardEvent, type SubmitEvent } from 'react';
 import { Button } from '@/components/ui/Button/Button';
 import { getSendMessageErrorMessage } from '@/helpers/chatError';
 import { useSendMessage } from '@/hooks/useSendMessage';
@@ -35,7 +35,7 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
     }
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     submit();
   };
@@ -58,8 +58,16 @@ export function MessageComposer({ chatId }: MessageComposerProps) {
           onChange={handleChange}
           onKeyDown={handleKeyDown}
         />
-        <Button type="submit" disabled={!canSend}>
-          {send.isPending ? 'Отправляем…' : 'Отправить'}
+        {/* Круглая кнопка-иконка, как в web.max.ru; имя для скринридера — в aria-label. */}
+        <Button
+          type="submit"
+          className={styles.send}
+          disabled={!canSend}
+          aria-label={send.isPending ? 'Отправляем…' : 'Отправить'}
+        >
+          <svg className={styles.icon} viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3.4 20.4 21 12 3.4 3.6 3.4 10l12.6 2-12.6 2z" />
+          </svg>
         </Button>
       </div>
     </form>

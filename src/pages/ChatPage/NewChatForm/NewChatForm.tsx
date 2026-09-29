@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type SubmitEvent } from 'react';
 import { Button } from '@/components/ui/Button/Button';
 import { Input } from '@/components/ui/Input/Input';
 import { getCreateChatErrorMessage } from '@/helpers/chatError';
@@ -24,7 +24,7 @@ export function NewChatForm() {
     if (createChat.isError) createChat.reset();
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!phone.trim()) {
       setPhoneError('Введите номер телефона');

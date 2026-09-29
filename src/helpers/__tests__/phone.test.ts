@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatPhone, normalizePhone } from '@/helpers/phone';
+import { formatPhone, getPhoneAvatarLabel, normalizePhone } from '@/helpers/phone';
 
 describe('normalizePhone', () => {
   it.each([
@@ -30,5 +30,11 @@ describe('normalizePhone', () => {
 describe('formatPhone', () => {
   it('показывает номер с «+»', () => {
     expect(formatPhone('79991234567')).toBe('+79991234567');
+  });
+});
+
+describe('getPhoneAvatarLabel', () => {
+  it('две последние цифры номера', () => {
+    expect(getPhoneAvatarLabel('79991234567')).toBe('67');
   });
 });

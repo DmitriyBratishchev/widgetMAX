@@ -1,8 +1,11 @@
-import { formatPhone } from '@/helpers/phone';
+import { Avatar } from '@/components/ui/Avatar/Avatar';
+import { formatMessageTime } from '@/helpers/formatTime';
+import { formatPhone, getPhoneAvatarLabel } from '@/helpers/phone';
 import { useChatStore } from '@/stores/chatStore';
 import styles from './ChatList.module.scss';
 
 export function ChatList() {
+  // Порядок — из стора: чат с новым сообщением уже поднят наверх (chatStore.addMessage).
   const chats = useChatStore((s) => s.chats);
   const messagesByChatId = useChatStore((s) => s.messagesByChatId);
   const activeChatId = useChatStore((s) => s.activeChatId);
@@ -29,8 +32,21 @@ export function ChatList() {
               aria-current={isActive ? 'true' : undefined}
               onClick={() => selectChat(chat.chatId)}
             >
-              <span className={styles.name}>{formatPhone(chat.phone)}</span>
-              <span className={styles.preview}>{lastMessage?.text ?? 'Нет сообщений'}</span>
+              <Avatar label={getPhoneAvatarLabel(chat.phone)} />
+              <span className={styles.body}>
+                <span className={styles.row}>
+                  <span className={styles.name}>{formatPhone(chat.phone)}</span>
+                  {lastMessage && (
+                    <time
+                      className={styles.time}
+                      dateTime={new Date(lastMessage.timestamp).toISOString()}
+                    >
+                      {formatMessageTime(lastMessage.timestamp)}
+                    </time>
+                  )}
+                </span>
+                <span className={styles.preview}>{lastMessage?.text ?? 'Нет сообщений'}</span>
+              </span>
             </button>
           </li>
         );

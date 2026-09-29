@@ -14,3 +14,8 @@ export function normalizePhone(input: string): string | null {
 export function formatPhone(phone: string): string {
   return `+${phone}`;
 }
+
+// Подпись аватара: имён у собеседников нет, две последние цифры различают чаты в списке.
+export function getPhoneAvatarLabel(phone: string): string {
+  return phone.slice(-2);
+}

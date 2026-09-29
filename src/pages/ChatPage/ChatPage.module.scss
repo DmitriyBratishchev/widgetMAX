@@ -1,35 +1,8 @@
+@use '@/styles/mixins/breakpoints' as *;
+
 .page {
   display: flex;
-  flex-direction: column;
   height: 100%;
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  height: var(--layout-header-height);
-  padding: 0 var(--space-4);
-  border-bottom: var(--border-width) solid var(--color-border);
-  background: var(--color-surface);
-}
-
-.title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-accent);
-}
-
-.instance {
-  margin-right: auto;
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-}
-
-.body {
-  display: flex;
-  flex: 1;
-  min-height: 0;
 }
 
 .sidebar {
@@ -37,8 +10,44 @@
   flex-direction: column;
   flex-shrink: 0;
   width: var(--layout-sidebar-width);
+  min-height: 0;
   border-right: var(--border-width) solid var(--color-border);
   background: var(--color-surface);
+
+  @include narrow {
+    width: 100%;
+    border-right: none;
+  }
+}
+
+.sidebarHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-shrink: 0;
+  height: var(--layout-header-height);
+  padding: 0 var(--space-4);
+  border-bottom: var(--border-width) solid var(--color-border);
+}
+
+.heading {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+}
+
+.instance {
+  overflow: hidden;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .chat {
@@ -46,25 +55,77 @@
   flex: 1;
   flex-direction: column;
   min-width: 0;
-  background: var(--color-chat-background);
+  background: var(--chat-background);
+}
+
+// Узкий экран: одна колонка — список, пока чат не открыт, и чат, когда открыт.
+.page[data-view='chat'] .sidebar,
+.page[data-view='list'] .chat {
+  @include narrow {
+    display: none;
+  }
 }
 
 .chatHeader {
   display: flex;
   align-items: center;
+  gap: var(--space-3);
   flex-shrink: 0;
   height: var(--layout-header-height);
   padding: 0 var(--space-4);
   border-bottom: var(--border-width) solid var(--color-border);
   background: var(--color-surface);
+
+  @include narrow {
+    gap: var(--space-2);
+    padding-left: var(--space-1);
+  }
+}
+
+.back {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-height);
+  height: var(--control-height);
+  border: none;
+  border-radius: var(--radius-round);
+  background: transparent;
+  color: var(--color-accent);
+
+  &:hover {
+    background: var(--color-surface-hover);
+  }
+
+  &:focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-focus-ring);
+  }
+
+  @include narrow {
+    display: inline-flex;
+  }
+}
+
+.icon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  fill: currentColor;
 }
 
 .chatTitle {
+  overflow: hidden;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
+// Плашка по центру: на градиентном фоне голый текст не читается.
 .placeholder {
   margin: auto;
-  color: var(--color-text-muted);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  text-align: center;
 }

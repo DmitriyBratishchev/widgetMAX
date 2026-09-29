@@ -66,6 +66,27 @@ describe('ChatPage: пустые состояния', () => {
   });
 });
 
+describe('ChatPage: узкий экран', () => {
+  // Колонки прячет CSS (@include narrow), jsdom его не применяет — проверяем data-view и поведение.
+  it('«Назад» закрывает чат и возвращает к списку', async () => {
+    openChat();
+    const user = userEvent.setup();
+    const { container } = renderWithQueryClient(<ChatPage />);
+    const page = container.firstElementChild;
+
+    expect(page).toHaveAttribute('data-view', 'chat');
+
+    await user.click(screen.getByRole('button', { name: 'Назад к списку чатов' }));
+
+    expect(page).toHaveAttribute('data-view', 'list');
+    expect(screen.queryByLabelText('Сообщение')).not.toBeInTheDocument();
+    expect(
+      screen.getByText('Выберите чат или создайте новый по номеру телефона'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Чаты' })).toHaveTextContent('+79991234567');
+  });
+});
+
 describe('ChatPage: новый чат', () => {
   it('неверный номер → ошибка поля, запрос не уходит', async () => {
     const user = userEvent.setup();
@@ -242,5 +263,36 @@ describe('ChatPage: приём', () => {
 
     const messages = await screen.findByRole('list', { name: 'Сообщения' });
     expect(within(messages).getByText('Привет из MAX')).toBeInTheDocument();
+  });
+
+  it('ответ в чат внизу списка поднимает его наверх, с временем и превью', async () => {
+    openChat();
+    useChatStore.getState().addChat({ chatId: '20000000', phone: '79990000000' });
+    vi.mocked(receiveNotification).mockResolvedValueOnce({
+      receiptId: 1234567,
+      body: {
+        typeWebhook: 'incomingMessageReceived',
+        timestamp: 1763115112,
+        idMessage: '1763115112345',
+        senderData: { chatId: '10000000' },
+        messageData: {
+          typeMessage: 'textMessage',
+          textMessageData: { textMessage: 'Привет из MAX' },
+        },
+      },
+    });
+    renderWithQueryClient(<ChatPage />);
+    const chatList = screen.getByRole('list', { name: 'Чаты' });
+
+    expect(within(chatList).getAllByRole('button')[0]).toHaveTextContent('+79990000000');
+
+    await within(chatList).findByText('Привет из MAX');
+
+    const [first] = within(chatList).getAllByRole('button');
+    expect(first).toHaveTextContent('+79991234567');
+    expect(first.querySelector('time')).toHaveAttribute(
+      'dateTime',
+      new Date(1763115112000).toISOString(),
+    );
   });
 });

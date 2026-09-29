@@ -4,25 +4,29 @@
   flex-direction: column;
   gap: var(--space-2);
   overflow-y: auto;
-  padding: var(--space-4);
+  // Лента — колонкой по центру, как у web.max.ru: на широком мониторе пузыри не разъезжаются к краям.
+  padding: var(--space-4) max(var(--space-4), calc((100% - var(--layout-feed-max-width)) / 2));
 }
 
 .message {
   display: flex;
   flex-direction: column;
-  max-width: var(--layout-message-max-width);
+  max-width: min(var(--layout-message-max-width), 85%);
   padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   box-shadow: var(--shadow-message);
 }
 
+// «Хвост» пузыря — угол у стороны отправителя острее остальных.
 .incoming {
   align-self: flex-start;
+  border-bottom-left-radius: var(--radius-xs);
   background: var(--color-message-incoming);
 }
 
 .outgoing {
   align-self: flex-end;
+  border-bottom-right-radius: var(--radius-xs);
   background: var(--color-message-outgoing);
 }
 
@@ -37,10 +41,12 @@
   color: var(--color-text-muted);
 }
 
+// Пустая лента — плашка по центру: на градиентном фоне голый текст не читается.
 .empty {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  color: var(--color-text-muted);
+  margin: auto;
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  text-align: center;
 }

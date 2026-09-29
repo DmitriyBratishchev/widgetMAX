@@ -26,6 +26,7 @@ interface ChatData {
 interface ChatState extends ChatData {
   addChat: (chat: Chat) => void;
   selectChat: (chatId: string) => void;
+  closeChat: () => void;
   addMessage: (message: ChatMessage) => void;
   reset: () => void;
 }
@@ -49,12 +50,17 @@ export const useChatStore = create<ChatState>()(
           activeChatId: chat.chatId,
         })),
       selectChat: (chatId) => set({ activeChatId: chatId }),
+      // «Назад» на узком экране: к списку чатов.
+      closeChat: () => set({ activeChatId: null }),
       // Дедуп по idMessage: WM-03 получит эхо своей же отправки (outgoingAPIMessageReceived).
+      // Новое сообщение поднимает свой чат в начало списка — сортировка по последней активности.
       addMessage: (message) =>
         set((state) => {
           const messages = state.messagesByChatId[message.chatId] ?? [];
           if (messages.some((m) => m.idMessage === message.idMessage)) return state;
+          const chat = state.chats.find((c) => c.chatId === message.chatId);
           return {
+            chats: chat ? [chat, ...state.chats.filter((c) => c !== chat)] : state.chats,
             messagesByChatId: {
               ...state.messagesByChatId,
               [message.chatId]: [...messages, message],
